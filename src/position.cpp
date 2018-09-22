@@ -69,13 +69,17 @@ TEST(Position3D, Optimize)
 
 TEST(Robot1D, MLE)
 {
-  double l = 10;
-  double lhat = 0.0;
   double rvar = 1e-5;
   double evar = 1e-1;
 
   Eigen::Matrix<double, 8, 1> x;
   x << 0, 1, 2, 3, 4, 5, 6, 7;
+
+  Eigen::Matrix<double, 3, 1> l;
+  l << 10.0, 15.0, 13.0;
+
+  Eigen::Matrix<double, 3, 1> lhat;
+  lhat << 12.0, 9.0, 15.0;
 
   Eigen::Matrix<double, 8, 1> xhat;
   xhat(0) = 0;
@@ -86,16 +90,21 @@ TEST(Robot1D, MLE)
   Problem problem;
 
   // Build up the graph
-  for (int i = 1; i < x.rows(); i++)
+  for (int i = 0; i < x.rows(); i++)
   {
-    double That = (x(i) - x(i-1)) + normal(gen)*sqrt(evar);
-    double zbar = (l - x[i]) + normal(gen)*sqrt(rvar);
-    xhat(i) = xhat(i-1) + That;
-    if (i == 1)
-      lhat = xhat(i) + zbar;
+    if (i > 0)
+    {
+      double That = (x(i) - x(i-1)) + normal(gen)*sqrt(evar);
+      xhat(i) = xhat(i-1) + That;
+      problem.AddResidualBlock(new Transform1d(That, evar), NULL, xhat.data() + i-1, xhat.data() + i);
+    }
 
-    problem.AddResidualBlock(new Range1dFactor(zbar, rvar), NULL, &lhat, xhat.data() + i);
-    problem.AddResidualBlock(new Transform1d(That, evar), NULL, xhat.data() + i-1, xhat.data() + i);
+    for (int j = 0; j < l.rows(); j++)
+    {
+      double zbar = (l[j] - x[i]) + normal(gen)*sqrt(rvar);
+      problem.AddResidualBlock(new Range1dFactor(zbar, rvar), NULL, lhat.data()+j, xhat.data() + i);
+    }
+
   }
 
   Solver::Options options;
@@ -104,14 +113,12 @@ TEST(Robot1D, MLE)
   options.minimizer_progress_to_stdout = true;
 
   Solver::Summary summary;
-  double e0 = (x-xhat).norm();
-  std::cout << "x0: " << xhat.transpose() << " e: " << e0 << "\n";
+  std::cout << "x: " << x.transpose() << "  l: " << l.transpose() << "\n";
+  double e0 = (x-xhat).norm() + (l-lhat).norm();
+  std::cout << "x0: " << xhat.transpose() << "  l0: " << lhat.transpose() << "  e: " << e0 << "\n";
   ceres::Solve(options, &problem, &summary);
-  double ef = (x-xhat).norm();
-  std::cout << "xf: " << xhat.transpose() << " e: " << ef << "\n";
-  for (int i = 0; i < x.rows(); i++)
-  {
-    EXPECT_LT(ef, e0);
-  }
+  double ef = (x-xhat).norm() + (l-lhat).norm();
+  std::cout << "xf: " << xhat.transpose() << "  lf: " << lhat.transpose() << "  e: " << ef << std::endl;
+  EXPECT_LT(ef, e0);
 }
 
