@@ -4,6 +4,7 @@
 #include "factors/position_3d.h"
 #include "factors/range_1d.h"
 #include "factors/transform_1d.h"
+#include "lie/quat.h"
 #include <ceres/ceres.h>
 
 #include "gtest/gtest.h"
@@ -24,6 +25,32 @@ TEST(Position1D, Optimize)
   for (int i = 0; i < numObs; i++)
   {
     double sample = x + (rand() % 1000 - 500)/1000.0;
+    problem.AddResidualBlock(new Position1dFactor(sample), NULL, &xhat);
+  }
+
+  Solver::Options options;
+  options.max_num_iterations = 25;
+  options.linear_solver_type = ceres::DENSE_QR;
+  options.minimizer_progress_to_stdout = true;
+
+  Solver::Summary summary;
+  ceres::Solve(options, &problem, &summary);
+  EXPECT_NEAR(xhat, x, 1e-3);
+}
+
+TEST(Position1D, OptimizeWithParameterBlock)
+{
+  double x = 5.0;
+  int numObs = 10000;
+  double init_x = 3.0;
+  double xhat = init_x;
+
+  Problem problem;
+  problem.AddParameterBlock(&xhat, 1);
+
+  for (int i = 0; i < numObs; i++)
+  {
+    double sample = x + (rand() % 1000 - 500)*1e-4;
     problem.AddResidualBlock(new Position1dFactor(sample), NULL, &xhat);
   }
 
@@ -121,4 +148,3 @@ TEST(Robot1D, MLE)
   std::cout << "xf: " << xhat.transpose() << "  lf: " << lhat.transpose() << "  e: " << ef << std::endl;
   EXPECT_LT(ef, e0);
 }
-

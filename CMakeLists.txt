@@ -11,3 +11,6 @@ include_directories(include
 
 add_executable(position src/position.cpp)
 target_link_libraries(position gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
+
+add_executable(attitude src/attitude.cpp)
+target_link_libraries(attitude gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
