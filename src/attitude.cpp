@@ -7,6 +7,62 @@
 
 using namespace ceres;
 using namespace Eigen;
+using namespace std;
+
+Eigen::MatrixXd calc_jac(std::function<Eigen::MatrixXd(Eigen::MatrixXd)> fun, Eigen::MatrixXd x)
+{
+  Eigen::MatrixXd y = fun(x);
+  int cols = x.rows();
+  int rows = y.rows();
+
+  Eigen::MatrixXd I;
+  I.resize(cols, cols);
+  I.setZero(cols, cols);
+  for (int i = 0; i < cols; i++)
+    I(i,i) = 1e-8;
+
+  Eigen::MatrixXd JFD;
+  JFD.setZero(rows, cols);
+  for (int i =0; i < cols; i++)
+  {
+    Eigen::MatrixXd xp = x + I.col(i);
+    Eigen::MatrixXd xm = x - I.col(i);
+    Eigen::MatrixXd yp = fun(xp);
+    Eigen::MatrixXd ym = fun(xm);
+    JFD.col(i) = (yp - ym)/(2*1e-8);
+  }
+  return JFD;
+}
+
+Eigen::MatrixXd invotimes(Eigen::MatrixXd q2, Eigen::MatrixXd q1)
+{
+  quat::Quat Q2(q2);
+  quat::Quat Q1(q1);
+  return Q2.inverse().otimes(Q1).arr_;
+}
+
+Eigen::MatrixXd logp1(Eigen::MatrixXd _w, Eigen::MatrixXd xyz)
+{
+  double w = _w(0,0);
+  double nxyz = xyz.norm();
+  return  2.0 * atan2(nxyz, w) * xyz / nxyz;
+}
+
+Eigen::MatrixXd logp2(Eigen::MatrixXd xyz, Eigen::MatrixXd _w)
+{
+  double w = _w(0,0);
+  double nxyz = xyz.norm();
+  return  2.0 * atan2(nxyz, w) * xyz / nxyz;
+}
+
+MatrixXd boxminus(MatrixXd q2, MatrixXd q1)
+{
+  MatrixXd qtilde = invotimes(q2, q1);
+  double w = qtilde(0,0);
+  Vector3d xyz = qtilde.block<3,1>(1,0);
+  double nxyz = xyz.norm();
+  return 2.0 * atan2(nxyz, w) * xyz / nxyz;
+}
 
 TEST(Attitude3d, CheckLocalParamPlus)
 {
@@ -25,6 +81,102 @@ TEST(Attitude3d, CheckLocalParamPlus)
     EXPECT_FLOAT_EQ(xplus1.y(), xplus2.y());
     EXPECT_FLOAT_EQ(xplus1.z(), xplus2.z());
   }
+}
+
+TEST(Attitude3d, logp1)
+{
+  Vector4d q1;
+  q1.setRandom(4,1);
+  q1 /= q1.norm();
+  double w = q1(0,0);
+  MatrixXd _w; _w.resize(1,1); _w << w;
+  MatrixXd xyz = q1.segment<3>(1);
+  double nxyz = xyz.norm();
+  MatrixXd JA = -(2.0 * nxyz) / (nxyz*nxyz + w*w) * xyz / nxyz;
+  MatrixXd JFD = calc_jac([xyz](MatrixXd w){return logp1(w, xyz);}, _w);
+//  cout << "JA = \n" << JA << endl;
+//  cout << "JFD = \n" << JFD << endl;
+  EXPECT_LE((JA - JFD).array().abs().sum(), 1e-7);
+}
+
+TEST(Attitude3d, logp2)
+{
+  Vector4d q1;
+  q1.setRandom(4,1);
+  q1 /= q1.norm();
+  double w = q1(0,0);
+  MatrixXd _w; _w.resize(1,1); _w << w;
+  MatrixXd xyz = q1.segment<3>(1);
+  double nxyz = xyz.norm();
+  Matrix3d I = Eigen::Matrix3d::Identity();
+  MatrixXd JA = (2.0 * w) / (nxyz*nxyz + w*w) * (xyz * xyz.transpose()) / (nxyz*nxyz)
+      + 2.0 * atan2(nxyz, w) * (I * nxyz*nxyz - xyz * xyz.transpose())/(nxyz*nxyz*nxyz);
+  MatrixXd JFD = calc_jac([_w](MatrixXd _xyz){return logp2(_xyz, _w);}, xyz);
+//  cout << "JA = \n" << JA << endl;
+//  cout << "JFD = \n" << JFD << endl;
+  EXPECT_LE((JA - JFD).array().abs().sum(), 1e-7);
+}
+
+
+TEST(Attitude3d, invotimesjac)
+{
+  Eigen::MatrixXd q1, q2;
+  q1.setRandom(4,1);
+  q2.setRandom(4,1);
+  q1 /= q1.norm();
+  q2 /= q2.norm();
+
+  double q1w = q1(0, 0);
+  double q1x = q1(1, 0);
+  double q1y = q1(2, 0);
+  double q1z = q1(3, 0);
+  Eigen::MatrixXd J;
+  J.resize(4,4);
+  J << q1w,  q1x,  q1y,  q1z,
+       q1x, -q1w, -q1z,  q1y,
+       q1y,  q1z, -q1w, -q1x,
+       q1z, -q1y,  q1x, -q1w;
+  Eigen::MatrixXd JFD = calc_jac([q1](Eigen::MatrixXd q2){return invotimes(q2, q1);}, q2);
+//  cout << "JFD: \n" << JFD << endl;
+//  cout << "JA: \n" << J<< endl;
+  EXPECT_LE((J - JFD).array().abs().sum(), 1e-7);
+}
+
+TEST(Attitude3d, boxminusjac)
+{
+  Eigen::MatrixXd q1, q2;
+  q1.setRandom(4,1);
+  q2.setRandom(4,1);
+  q1 /= q1.norm();
+  q2 /= q2.norm();
+
+  double q1w = q1(0, 0);
+  double q1x = q1(1, 0);
+  double q1y = q1(2, 0);
+  double q1z = q1(3, 0);
+  Eigen::MatrixXd Qmat;
+  Qmat.resize(4,4);
+  Qmat << q1w,  q1x,  q1y,  q1z,
+          q1x, -q1w, -q1z,  q1y,
+          q1y,  q1z, -q1w, -q1x,
+          q1z, -q1y,  q1x, -q1w;
+  Vector4d qtilde = invotimes(q2, q1);
+  double w = qtilde(0,0);
+  Vector3d xyz = qtilde.block<3,1>(1,0);
+  double nxyz = xyz.norm();
+  Matrix3d I = Eigen::Matrix3d::Identity();
+
+  MatrixXd JA;
+  JA.resize(3, 4);
+  JA.block<3,1>(0,0) = -(2.0 * nxyz) / (nxyz*nxyz + w*w) * xyz / nxyz;
+  JA.block<3,3>(0,1) = (2.0 * w) / (nxyz*nxyz + w*w) * (xyz * xyz.transpose()) / (nxyz*nxyz)
+      + 2.0 * atan2(nxyz, w) * (I * nxyz*nxyz - xyz * xyz.transpose())/(nxyz*nxyz*nxyz);
+  JA = JA * Qmat;
+
+  MatrixXd JFD = calc_jac([q1](MatrixXd _q2){return boxminus(_q2, q1);}, q2);
+//  cout << "JA = \n" << JA << endl;
+//  cout << "JFD = \n" << JFD << endl;
+  EXPECT_LE((JA - JFD).array().abs().sum(), 1e-7);
 }
 
 TEST(Attitude3d, CheckFactorEvaluate)
@@ -82,8 +234,9 @@ TEST(Attitude3d, CheckFactorJac)
     JFD.col(i) = (delta1primeplus - delta1primeminus) / 2e-8;
   }
 
-  std::cout << "J\n" << J << "\n";
-  std::cout << "JFD\n" << JFD << "\n";
+//  std::cout << "J\n" << J << "\n";
+//  std::cout << "JFD\n" << JFD << "\n";
+  EXPECT_LE((J - JFD).array().abs().sum(), 1e-6);
 }
 
 TEST(Attitude3d, CheckLocalParamJac)
@@ -92,7 +245,7 @@ TEST(Attitude3d, CheckLocalParamJac)
 
   quat::Quat x = quat::Quat::Random();
   Eigen::Vector3d delta;
-  delta.setRandom();
+  delta.setZero(); // Jacobian is evaluated at dx = 0
   quat::Quat xplus1, xplus2;
   param->Plus(x.data(), delta.data(), xplus1.data());
   xplus2 = x + delta;
@@ -114,13 +267,16 @@ TEST(Attitude3d, CheckLocalParamJac)
     JFD.col(i) = (xplusprimeplus - xplusprimeminus)/2e-8;
   }
 
-  EXPECT_LE((J - JFD).array().abs().sum(), 0.5);
+//  std::cout << "J\n" << J << "\n";
+//  std::cout << "JFD\n" << JFD << "\n";
+  EXPECT_LE((J - JFD).array().abs().sum(), 1e-5);
+
 }
 
 TEST(Attitude3d, AverageAttitude)
 {
   int numObs = 1000;
-  int noise_level = 1e-5;
+  int noise_level = 1e-2;
   quat::Quat x = quat::Quat::Random();
   quat::Quat xhat = quat::Quat::Identity();
 
@@ -143,4 +299,5 @@ TEST(Attitude3d, AverageAttitude)
   std::cout << "xhat:" << xhat << "\n";
   ceres::Solve(options, &problem, &summary);
   std::cout << "xhat: " << xhat << std::endl;
+  EXPECT_LE((xhat - x).array().abs().sum(), 1e-8);
 }

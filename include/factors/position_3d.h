@@ -24,7 +24,7 @@ class Position3dFactor : public ceres::SizedCostFunction<3,3>
     {
       if (jacobians[0])
       {
-        Eigen::Map<Eigen::Matrix3d> drdz(jacobians[0]);
+        Eigen::Map<Eigen::Matrix3d, Eigen::RowMajor> drdz(jacobians[0]);
         drdz = -1.0 * Eigen::Matrix3d::Identity();
       }
     }
