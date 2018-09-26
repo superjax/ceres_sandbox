@@ -40,7 +40,8 @@ public:
   inline const Vec4& elements() const { return arr_;}
 
 
-  Quat operator* (const Quat& q) const { return otimes(q); }
+  template<typename T2>
+  Quat operator* (const Quat<T2>& q) const { return otimes(q); }
   Quat& operator *= (const Quat& q)
   {
     arr_ <<  w() * q.w() - x() *q.x() - y() * q.y() - z() * q.z(),
@@ -64,9 +65,9 @@ public:
   static Matrix<T,3,3> skew(const Vec3& v)
   {
     static Matrix<T,3,3> skew_mat;
-    skew_mat << 0.0, -v(2), v(1),
-                v(2), 0.0, -v(0),
-                -v(1), v(0), 0.0;
+    skew_mat << (T)0.0, -v(2), v(1),
+                v(2), (T)0.0, -v(0),
+                -v(1), v(0), (T)0.0;
     return skew_mat;
   }
 
@@ -238,7 +239,7 @@ public:
 
   Vec3 bar() const
   {
-    return arr_.segment<3>(1);
+    return arr_.block(1,0,3,1);
   }
 
   Matrix<T,3,3> R() const
@@ -296,7 +297,8 @@ public:
 
 
   // The same as R.T * v but faster
-  Vec3 rota(const Vec3& v) const
+  template<typename T2>
+  Vec3 rota(const Matrix<T2,3,1>& v) const
   {
     Vec3 t = 2.0 * v.cross(bar());
     return v - w() * t + t.cross(bar());

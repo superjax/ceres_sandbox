@@ -36,16 +36,16 @@ public:
 
   Xform(){}
 
-  Xform(const double* data)
+  Xform(const T* data)
   {
     t_ = Map<const Vec3>(data);
     q_ = Map<const Vec4>(data + 3);
   }
 
   Xform(const Vec7& arr)
-    : q_(arr.segment<4>(3))
+    : q_(arr.block(3,0,4,1))
   {
-    t_ = arr.segment<3>(0);
+    t_ = arr.block(0,0,3,1);
   }
 
   Xform(const Vec3& t, const Quat<T>& q)
@@ -88,7 +88,8 @@ public:
     return boxplus(v);
   }
 
-  Vec6 operator- (const Xform& X)
+  template<typename T2>
+  Matrix<T2,6,1> operator- (const Xform<T2>& X) const
   {
     return boxminus(X);
   }
@@ -101,8 +102,8 @@ public:
   Vec7 elements() const
   {
     Vec7 out;
-    out.segment<3>(0) = t_;
-    out.segment<4>(3) = q_.arr_;
+    out.block(0,0,3,1) = t_;
+    out.block(3,0,4,1) = q_.arr_;
     return out;
   }
 
@@ -133,15 +134,15 @@ public:
 
   static Xform exp(const Vec6& v)
   {
-    Vec3 u = v.segment<3>(0);
-    Vec3 omega = v.segment<3>(3);
-    double th = omega.norm();
+    Vec3 u = v.block(0,0,3,1);
+    Vec3 omega = v.block(3,0,3,1);
+    T th = omega.norm();
     Quat<T> q_exp = Quat<T>::exp(omega);
     if (th > 1e-4)
     {
-      Matrix3d wx = Quat<T>::skew(omega);
-      double B = (1. - std::cos(th)) / (th * th);
-      double C = (th - std::sin(th)) / (th * th * th);
+      Mat3 wx = Quat<T>::skew(omega);
+      T B = ((T)1. - cos(th)) / (th * th);
+      T C = (th - sin(th)) / (th * th * th);
       return Xform((I_3x3 + B*wx + C*wx*wx).transpose() * u, q_exp);
     }
     else
@@ -154,19 +155,19 @@ public:
   {
     Vec6 u;
     Vec3 omega = Quat<T>::log(X.q_);
-    u.segment<3>(3) = omega;
-    double th = omega.norm();
+    u.block(3,0,3,1) = omega;
+    T th = omega.norm();
     if (th > 1e-16)
     {
-      Matrix3d wx = Quat<T>::skew(omega);
-      double A = std::sin(th)/th;
-      double B = (1. - std::cos(th)) / (th * th);
-      Matrix3d V = I_3x3 - (1./2.)*wx + (1./(th*th)) * (1.-(A/(2.*B)))*(wx* wx);
-      u.segment<3>(0) = V.transpose() * X.t_;
+      Mat3 wx = Quat<T>::skew(omega);
+      T A = sin(th)/th;
+      T B = ((T)1. - cos(th)) / (th * th);
+      Mat3 V = I_3x3 - (1./2.)*wx + (1./(th*th)) * (1.-(A/(2.*B)))*(wx* wx);
+      u.block(0,0,3,1) = V.transpose() * X.t_;
     }
     else
     {
-      u.segment<3>(0) = X.t_;
+      u.block(0,0,3,1) = X.t_;
     }
     return u;
   }
@@ -174,7 +175,7 @@ public:
   Mat6 Adj() const
   {
     Mat6 out;
-    Matrix3d R = q_.R();
+    Mat3 R = q_.R();
     out.block<3,3>(0,0) = R;
     out.block<3,3>(0,3) = Quat<T>::skew(t_)*R;
     out.block<3,3>(3,3) = R;
@@ -187,9 +188,14 @@ public:
     return out;
   }
 
-  Xform otimes(const Xform& T2) const
+  template <typename T2>
+  Xform otimes(const Xform<T2>& X2) const
   {
-    return Xform(t_ + q_.rota(T2.t_), q_ * T2.q_);
+    Xform<T> X;
+    X.t_ = t_ + q_.rota(X2.t_);
+    X.q_ = q_ * X2.q_;
+    return X;
+//    return Xform(t_ + q_.rota(X2.t_), q_ * X2.q_);
   }
 
   Vec3 transforma(const Vec3& v) const
@@ -213,9 +219,10 @@ public:
     return otimes(Xform::exp(delta));
   }
 
-  Vec6 boxminus(const Xform& X) const
+  template<typename T2>
+  Matrix<T,6,1> boxminus(const Xform<T2>& X) const
   {
-    return Xform::log(X.inverse().otimes(*this));
+    return Xform<T2>::log(X.inverse().otimes(*this));
   }
 
 };
