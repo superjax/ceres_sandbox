@@ -100,7 +100,7 @@ public:
       if (jacobians[0])
       {
         double w = qtilde.w();
-        Vector3d xyz = qtilde.arr_.segment<3>(1);
+        Map<Vector3d> xyz(qtilde.data() + 1);
         double nxyz = xyz.norm();
         Eigen::Map<Eigen::Matrix<double, 3, 4, RowMajor>> J(jacobians[0]);
         static const Matrix3d I = Eigen::Matrix3d::Identity();
@@ -118,7 +118,7 @@ public:
         J.block<3,1>(0,0) = -(2.0 * nxyz) / (nxyz*nxyz + w*w) * xyz / nxyz;
         J.block<3,3>(0,1) = (2.0 * w) / (nxyz*nxyz + w*w) * (xyz * xyz.transpose()) / (nxyz*nxyz)
             + 2.0 * atan2(nxyz, w) * (I * nxyz*nxyz - xyz * xyz.transpose())/(nxyz*nxyz*nxyz);
-        J = J * Qmat;
+        J = J * negative * Qmat;
       }
     }
     return true;
