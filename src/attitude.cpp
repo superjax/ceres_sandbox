@@ -6,7 +6,7 @@
 #include "gtest/gtest.h"
 #include "Eigen/Dense"
 
-#define NUM_ITERS 1000
+#define NUM_ITERS 10
 
 using namespace ceres;
 using namespace Eigen;

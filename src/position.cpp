@@ -13,7 +13,7 @@
 using namespace ceres;
 using namespace Eigen;
 
-TEST(Position1D, Optimize)
+TEST(Position1D, AveragePoints)
 {
   double x = 5.0;
   int numObs = 1000;
@@ -38,7 +38,7 @@ TEST(Position1D, Optimize)
   EXPECT_NEAR(xhat, x, 1e-3);
 }
 
-TEST(Position1D, OptimizeWithParameterBlock)
+TEST(Position1D, AveragePointsWithParameterBlock)
 {
   double x = 5.0;
   int numObs = 10000;
@@ -65,7 +65,7 @@ TEST(Position1D, OptimizeWithParameterBlock)
 }
 
 
-TEST(Position3D, Optimize)
+TEST(Position3D, AveragePoints)
 {
   Vector3d x = (Vector3d() << 1.0, 2.0, 3.0).finished();
   int numObs = 10000;
@@ -94,7 +94,7 @@ TEST(Position3D, Optimize)
   EXPECT_NEAR(xhat[2], x[2], 1e-3);
 }
 
-TEST(Robot1D, MLE)
+TEST(Robot1D, SLAM)
 {
   double rvar = 1e-5;
   double evar = 1e-1;
