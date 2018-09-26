@@ -33,9 +33,10 @@ In writing the `QuatFactor` and `QuatParameterization` classes, I wanted to make
 ### Attitude3d.AverageAttitude
 This takes a quaternion and creates 1000 samples normally distributed about this quaternion (using the tangent space to come up with the samples).  Then, I use ceres solver to recover the mean.  Probably the stupidest way to take a mean of a data set, but it exercises the use of a local parameterization, and non-trivial analytic jacobians over my factor.
 
-### Attitude3d.AverageAttitudeAutoGrad
- - Uses the AutoDiff Local Parameterization
- - Uses the AutoDiff Factor
+### Attitude3d.AverageAttitudeAutoDiff
+Finds the average attitude of a sample of 1000 attitude measurements using the autodiff functionality for both the localparameterization and cost function.
 
 ## `pose.cpp`
+Next, I figured I could do some pose-graph SLAM
+
  

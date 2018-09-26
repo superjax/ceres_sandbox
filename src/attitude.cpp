@@ -20,10 +20,10 @@ TEST(Attitude3d, CheckLocalParamPlus)
     {
       QuatParameterization* param = new QuatParameterization();
 
-      quat::Quat x = quat::Quat::Random();
+      quat::Quat<double> x = quat::Quat<double>::Random();
       Eigen::Vector3d delta;
       delta.setRandom();
-      quat::Quat xplus1, xplus2;
+      quat::Quat<double> xplus1, xplus2;
       param->Plus(x.data(), delta.data(), xplus1.data());
       xplus2 = x + delta;
       EXPECT_FLOAT_EQ(xplus1.w(), xplus2.w());
@@ -40,8 +40,8 @@ TEST(Attitude3d, CheckFactorEvaluate)
   {
     for (int i = 0; i < 1000; i++)
     {
-      quat::Quat x1 = quat::Quat::Random();
-      quat::Quat x2 = quat::Quat::Random();
+      quat::Quat<double> x1 = quat::Quat<double>::Random();
+      quat::Quat<double> x2 = quat::Quat<double>::Random();
       Vector3d delta1, delta2;
       QuatFactor* factor = new QuatFactor(x1.data());
       double* p[1];
@@ -59,8 +59,8 @@ TEST(Attitude3d, CheckFactorJac)
 {
   for (int j = 0; j < NUM_ITERS; j++)
   {
-    quat::Quat x1 = quat::Quat::Random();
-    quat::Quat x2 = quat::Quat::Random();
+    quat::Quat<double> x1 = quat::Quat<double>::Random();
+    quat::Quat<double> x2 = quat::Quat<double>::Random();
     Vector3d delta1, delta2;
     QuatFactor* factor = new QuatFactor(x1.data());
     double* p[1];
@@ -111,10 +111,10 @@ TEST(Attitude3d, CheckLocalParamJac)
   {
     QuatParameterization* param = new QuatParameterization();
 
-    quat::Quat x = quat::Quat::Random();
+    quat::Quat<double> x = quat::Quat<double>::Random();
     Eigen::Vector3d delta;
     delta.setZero(); // Jacobian is evaluated at dx = 0
-    quat::Quat xplus1, xplus2;
+    quat::Quat<double> xplus1, xplus2;
     param->Plus(x.data(), delta.data(), xplus1.data());
     xplus2 = x + delta;
 
@@ -148,15 +148,15 @@ TEST(Attitude3d, AverageAttitude)
   {
     int numObs = 1000;
     int noise_level = 1e-2;
-    quat::Quat x = quat::Quat::Random();
-    quat::Quat xhat = quat::Quat::Identity();
+    quat::Quat<double> x = quat::Quat<double>::Random();
+    quat::Quat<double> xhat = quat::Quat<double>::Identity();
 
     Problem problem;
     problem.AddParameterBlock(xhat.data(), 4, new QuatParameterization());
 
     for (int i = 0; i < numObs; i++)
     {
-      quat::Quat sample = x + Vector3d::Random()*noise_level;
+      quat::Quat<double> sample = x + Vector3d::Random()*noise_level;
       problem.AddResidualBlock(new QuatFactor(sample.data()), NULL, xhat.data());
     }
 
@@ -187,15 +187,15 @@ TEST(Attitude3d, AverageAttitudeAutoDiff)
   {
     int numObs = 1000;
     int noise_level = 1e-2;
-    quat::Quat x = quat::Quat::Random();
-    quat::Quat xhat = quat::Quat::Identity();
+    quat::Quat<double> x = quat::Quat<double>::Random();
+    quat::Quat<double> xhat = quat::Quat<double>::Identity();
 
     Problem problem;
     problem.AddParameterBlock(xhat.data(), 4, new QuatAutoDiffParameterization());
 
     for (int i = 0; i < numObs; i++)
     {
-      quat::Quat sample = x + Vector3d::Random()*noise_level;
+      quat::Quat<double> sample = x + Vector3d::Random()*noise_level;
       problem.AddResidualBlock(new QuatFactorAutoDiff(new QuatFactorCostFunction(sample.data())), NULL, xhat.data());
     }
 

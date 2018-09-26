@@ -5,99 +5,113 @@
 #include <math.h>
 #include <iostream>
 
-#include "quat.h"
-#include "math_helper.h"
+#include "lie/quat.h"
+#include "lie/math_helper.h"
 
 using namespace Eigen;
 using namespace quat;
 
-typedef Matrix<double, 7, 1> Vector7d;
-typedef Matrix<double, 6, 1> Vector6d;
-typedef Matrix<double, 6, 6> Matrix6d;
-typedef Matrix<double, 4, 4> Matrix4d;
-
 namespace xform
 {
 
+template <typename T>
 class Xform
 {
 private:
+
+  typedef Matrix<T, 2, 1> Vec2;
+  typedef Matrix<T, 3, 1> Vec3;
+  typedef Matrix<T, 4, 1> Vec4;
+  typedef Matrix<T, 5, 1> Vec5;
+  typedef Matrix<T, 6, 1> Vec6;
+  typedef Matrix<T, 7, 1> Vec7;
+
+  typedef Matrix<T, 3, 3> Mat3;
+  typedef Matrix<T, 4, 4> Mat4;
+  typedef Matrix<T, 6, 6> Mat6;
+
 public:
-  Vector3d t_;
-  Quat q_;
+  Vec3 t_;
+  Quat<T> q_;
 
   Xform(){}
 
-  Xform(const Vector7d& arr)
+  Xform(const double* data)
   {
-    t_ = arr.segment<3>(0);
-    q_ = Quat(arr.segment<4>(3));
+    t_ = Map<const Vec3>(data);
+    q_ = Map<const Vec4>(data + 3);
   }
 
-  Xform(const Vector3d& t, const Quat& q)
+  Xform(const Vec7& arr)
+    : q_(arr.segment<4>(3))
+  {
+    t_ = arr.segment<3>(0);
+  }
+
+  Xform(const Vec3& t, const Quat<T>& q)
   {
     t_ = t;
     q_ = q;
   }
 
-  Xform(const Vector3d& t, const Matrix3d& R)
+  Xform(const Vec3& t, const Mat3& R)
   {
-    q_ = Quat::from_R(R);
+    q_ = Quat<T>::from_R(R);
     t_ = t;
   }
 
-  Xform(const Matrix4d& T)
+  Xform(const Mat4& X)
   {
-    q_ = Quat::from_R(T.block<3,3>(0,0));
-    t_ = T.block<3,1>(0, 3);
+    q_ = Quat<T>::from_R(X.block<3,3>(0,0));
+    t_ = X.block<3,1>(0, 3);
   }
 
-  inline Vector3d& t() { return t_;}
-  inline Quat& q() { return q_;}
-  inline void setq(const Quat& q) {q_ = q;}
-  inline void sett(const Vector3d&t) {t_ = t;}
+  inline Vec3& t() { return t_;}
+  inline Quat<T>& q() { return q_;}
+  inline void setq(const Quat<T>& q) {q_ = q;}
+  inline void sett(const Vec3&t) {t_ = t;}
 
-  Xform operator* (const Xform& T) const {return otimes(T);}
-  Xform& operator*= (const Xform& T)
+  Xform operator* (const Xform& X) const {return otimes(X);}
+  Xform& operator*= (const Xform& X)
   {
-    t_ = t_ + q_.rotp(T.t_);
-    q_ = q_ * T.q_;
+    t_ = t_ + q_.rotp(X.t_);
+    q_ = q_ * X.q_;
   }
-  Xform& operator=(const Xform& T) {t_ = T.t_; q_ = T.q_;}
-  Xform& operator=(const Vector7d& v) {
+  Xform& operator=(const Xform& X) {t_ = X.t_; q_ = X.q_;}
+  Xform& operator=(const Vec7& v) {
     t_ = v.segment<3>(0);
-    q_ = Quat(v.segment<4>(3));
+    q_ = Quat<T>(v.segment<4>(3));
   }
 
-  Xform operator+ (const Vector6d& v)
+  Xform operator+ (const Vec6& v)
   {
     return boxplus(v);
   }
 
-  Vector6d operator- (const Xform& T)
+  Vec6 operator- (const Xform& X)
   {
-    return boxminus(T);
+    return boxminus(X);
   }
 
-  Xform& operator+=(const Vector6d& v)
+  Xform& operator+=(const Vec6& v)
   {
     *this = boxplus(v);
   }
 
-  Vector7d elements() const
+  Vec7 elements() const
   {
-    Vector7d out;
+    Vec7 out;
     out.segment<3>(0) = t_;
     out.segment<4>(3) = q_.arr_;
     return out;
   }
 
-  Matrix4d T() const
+  Mat4 Mat() const
   {
-    Matrix4d out;
+    Mat4 out;
     out.block<3,3>(0,0) = q_.R();
     out.block<3,1>(0,3) = t_;
-    out.block<1,3>(3,0).setZero();
+    out.block<1,3>(3,0) = Matrix<T,1,3>::Zero();
     out(3,3) = 1.0;
   }
 
@@ -105,7 +119,7 @@ public:
   {
     Xform out;
     out.t_.setZero();
-    out.q_ = Quat::Identity();
+    out.q_ = Quat<T>::Identity();
     return out;
   }
 
@@ -113,19 +127,19 @@ public:
   {
     Xform out;
     out.t_.setRandom();
-    out.q_ = Quat::Random();
+    out.q_ = Quat<T>::Random();
     return out;
   }
 
-  static Xform exp(const Vector6d& v)
+  static Xform exp(const Vec6& v)
   {
-    Vector3d u = v.segment<3>(0);
-    Vector3d omega = v.segment<3>(3);
+    Vec3 u = v.segment<3>(0);
+    Vec3 omega = v.segment<3>(3);
     double th = omega.norm();
-    Quat q_exp = Quat::exp(omega);
+    Quat<T> q_exp = Quat<T>::exp(omega);
     if (th > 1e-4)
     {
-      Matrix3d wx = Quat::skew(omega);
+      Matrix3d wx = Quat<T>::skew(omega);
       double B = (1. - std::cos(th)) / (th * th);
       double C = (th - std::sin(th)) / (th * th * th);
       return Xform((I_3x3 + B*wx + C*wx*wx).transpose() * u, q_exp);
@@ -136,35 +150,35 @@ public:
     }
   }
 
-  static Vector6d log(const Xform& T)
+  static Vec6 log(const Xform& X)
   {
-    Vector6d u;
-    Vector3d omega = Quat::log(T.q_);
+    Vec6 u;
+    Vec3 omega = Quat<T>::log(X.q_);
     u.segment<3>(3) = omega;
     double th = omega.norm();
     if (th > 1e-16)
     {
-      Matrix3d wx = Quat::skew(omega);
+      Matrix3d wx = Quat<T>::skew(omega);
       double A = std::sin(th)/th;
       double B = (1. - std::cos(th)) / (th * th);
       Matrix3d V = I_3x3 - (1./2.)*wx + (1./(th*th)) * (1.-(A/(2.*B)))*(wx* wx);
-      u.segment<3>(0) = V.transpose() * T.t_;
+      u.segment<3>(0) = V.transpose() * X.t_;
     }
     else
     {
-      u.segment<3>(0) = T.t_;
+      u.segment<3>(0) = X.t_;
     }
     return u;
   }
 
-  Matrix6d Adj() const
+  Mat6 Adj() const
   {
-    Matrix6d out;
+    Mat6 out;
     Matrix3d R = q_.R();
     out.block<3,3>(0,0) = R;
-    out.block<3,3>(0,3) = Quat::skew(t_)*R;
+    out.block<3,3>(0,3) = Quat<T>::skew(t_)*R;
     out.block<3,3>(3,3) = R;
-    out.block<3,3>(3,0).setZero();
+    out.block<3,3>(3,0) = Mat3::Zero();
     return out;
   }
 
@@ -178,12 +192,12 @@ public:
     return Xform(t_ + q_.rota(T2.t_), q_ * T2.q_);
   }
 
-  Vector3d transforma(const Vector3d& v) const
+  Vec3 transforma(const Vec3& v) const
   {
     return q_.rota(v) + t_;
   }
 
-  Vector3d transformp(const Vector3d& v) const
+  Vec3 transformp(const Vec3& v) const
   {
     return q_.rotp(v - t_);
   }
@@ -194,22 +208,23 @@ public:
     q_.invert();
   }
 
-  Xform boxplus(const Vector6d& delta) const
+  Xform boxplus(const Vec6& delta) const
   {
     return otimes(Xform::exp(delta));
   }
 
-  Vector6d boxminus(const Xform& T) const
+  Vec6 boxminus(const Xform& X) const
   {
-    return Xform::log(T.inverse().otimes(*this));
+    return Xform::log(X.inverse().otimes(*this));
   }
 
 };
 
-inline std::ostream& operator<< (std::ostream& os, const Xform& T)
+template <typename T>
+inline std::ostream& operator<< (std::ostream& os, const Xform<T>& X)
 {
-  os << "t: [ " << T.t_(0,0) << ", " << T.t_(1,0) << ", " << T.t_(2,0) <<
-        "] q: [ " << T.q_.w() << ", " << T.q_.x() << "i, " << T.q_.y() << "j, " << T.q_.z() << "k]";
+  os << "t: [ " << X.t_(0,0) << ", " << X.t_(1,0) << ", " << X.t_(2,0) <<
+        "] q: [ " << X.q_.w() << ", " << X.q_.x() << "i, " << X.q_.y() << "j, " << X.q_.z() << "k]";
   return os;
 }
 

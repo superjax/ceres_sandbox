@@ -144,15 +144,15 @@ public:
   virtual bool Evaluate(double const* const* parameters, double* residuals, double** jacobians) const
   {
     Eigen::Map<Eigen::Vector3d> res(residuals);
-    quat::Quat q2(parameters[0]);
-    quat::Quat qtilde = q2.inverse().otimes(quat_);
+    quat::Quat<double> q2(parameters[0]);
+    quat::Quat<double> qtilde = q2.inverse().otimes(quat_);
     double negative = 1.0;
     if (qtilde.w() < 0.0)
     {
       negative = -1.0;
       qtilde.arr_ *= -1.0;
     }
-    res = quat::Quat::log(qtilde);
+    res = quat::Quat<double>::log(qtilde);
 
 
     if (jacobians)
@@ -185,7 +185,7 @@ public:
   }
 
 private:
-  quat::Quat quat_;
+  quat::Quat<double> quat_;
 };
 
 class QuatFactorCostFunction

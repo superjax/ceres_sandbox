@@ -1,6 +1,8 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ceres_sandbox)
 
+set(CMAKE_CXX_STANDARD 14)
+
 find_package(Ceres REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTest REQUIRED)
@@ -14,3 +16,6 @@ target_link_libraries(position gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRA
 
 add_executable(attitude src/attitude.cpp)
 target_link_libraries(attitude gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
+
+add_executable(pose src/pose.cpp)
+target_link_libraries(pose gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
