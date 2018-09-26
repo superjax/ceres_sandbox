@@ -100,10 +100,13 @@ void invotimes(const T* q1, const T*q2, T * out)
 
 struct QuatPlus {
   template<typename T>
-  bool operator()(const T* x, const T* delta, T* x_plus_delta) const {
-    T d_exp[4];
-    exp(delta, d_exp);
-    otimes(x, d_exp, x_plus_delta);
+  bool operator()(const T* x, const T* delta, T* x_plus_delta) const
+  {
+    quat::Quat<T> q(x);
+    Map<const Matrix<T,3,1>> d(delta);
+    Map<Matrix<T,4,1>> qp(x_plus_delta);
+
+    qp = (q + d).elements();
     return true;
   }
 };
