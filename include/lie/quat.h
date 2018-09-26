@@ -19,7 +19,8 @@ private:
 
 public:
   Quat() {}
-  Quat(const Vec4& arr) : arr_(arr) {}
+
+  Quat(const Vec4& arr) : arr_(arr.data()) {}
   Quat(const T* data)
   {
       arr_ = Map<const Vec4>(data);
@@ -28,7 +29,7 @@ public:
   inline T* data() { return arr_.data(); }
 
   Vec4 arr_;
-  
+
   inline T w() const { return arr_(0); }
   inline T x() const { return arr_(1); }
   inline T y() const { return arr_(2); }
@@ -184,7 +185,7 @@ public:
       T invs = 1.0/sqrt((2.0*(1.0+d)));
       Vec3 xyz = u.cross(v*invs);
       q_arr(0) = 0.5/invs;
-      q_arr.block<3,1>(1,0)=xyz;
+      q_arr.block(1,0,3,1)=xyz;
       q_arr /= q_arr.norm();
     }
     else if (d < -0.99999999)
@@ -360,5 +361,7 @@ inline std::ostream& operator<< (std::ostream& os, const Quat<T>& q)
   os << "[ " << q.w() << ", " << q.x() << "i, " << q.y() << "j, " << q.z() << "k]";
   return os;
 }
+
+typedef Quat<double> Quatd;
 
 }

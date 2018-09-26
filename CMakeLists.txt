@@ -19,3 +19,6 @@ target_link_libraries(attitude gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRA
 
 add_executable(pose src/pose.cpp)
 target_link_libraries(pose gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
+
+add_executable(lie_test include/lie/tests.cpp)
+target_link_libraries(lie_test gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})

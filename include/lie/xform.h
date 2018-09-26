@@ -11,6 +11,7 @@
 using namespace Eigen;
 using namespace quat;
 
+
 namespace xform
 {
 
@@ -220,7 +221,7 @@ public:
   }
 
   template<typename T2>
-  Matrix<T,6,1> boxminus(const Xform<T2>& X) const
+  Matrix<T2,6,1> boxminus(const Xform<T2>& X) const
   {
     return Xform<T2>::log(X.inverse().otimes(*this));
   }
@@ -234,5 +235,7 @@ inline std::ostream& operator<< (std::ostream& os, const Xform<T>& X)
         "] q: [ " << X.q_.w() << ", " << X.q_.x() << "i, " << X.q_.y() << "j, " << X.q_.z() << "k]";
   return os;
 }
+
+typedef Xform<double> Xformd;
 
 }

@@ -34,9 +34,16 @@ In writing the `QuatFactor` and `QuatParameterization` classes, I wanted to make
 This takes a quaternion and creates 1000 samples normally distributed about this quaternion (using the tangent space to come up with the samples).  Then, I use ceres solver to recover the mean.  Probably the stupidest way to take a mean of a data set, but it exercises the use of a local parameterization, and non-trivial analytic jacobians over my factor.
 
 ### Attitude3d.AverageAttitudeAutoDiff
-Finds the average attitude of a sample of 1000 attitude measurements using the autodiff functionality for both the localparameterization and cost function.
+Finds the average attitude of a sample of 1000 attitude measurements using the autodiff functionality for both the localparameterization and cost function.  I also used my templated `Quat` library and let Ceres auto-diff through my library (based on Eigen).
 
 ## `pose.cpp`
-Next, I figured I could do some pose-graph SLAM
+Next, I figured I could do some pose-graph SLAM in SE3
 
- 
+### Pose.AveragePoseAutoDiff
+As before, just to exercise auto differentiation over a tangent space, I used ceres to find the average of a set of 1000 random `Xform` samples. (using my templated `Xform` library to represent members of homogeneous transforms)
+
+### Pose.GraphSLAM
+This is the most basic kind of non-trivial SLAM.  We have a bunch of nodes, and edges between nodes.  We also have loop-closures so that the graph is over-constrained and require optimization to find the maximum-likelihood configuration of all the nodes and edges.
+
+I'm using full 6DOF edges and nodes in this graph and the first node is fixed at the origin.
+
