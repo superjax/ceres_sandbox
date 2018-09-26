@@ -166,13 +166,52 @@ TEST(Attitude3d, AverageAttitude)
     options.minimizer_progress_to_stdout = false;
 
     Solver::Summary summary;
-    if (j == 0)
+    if (j == -1)
     {
       std::cout << "x:   " << x << "\n";
       std::cout << "xhat:" << xhat << "\n";
     }
     ceres::Solve(options, &problem, &summary);
-    if (j == 0)
+    if (j == -1)
+      std::cout << "xhat: " << xhat << std::endl;
+    double error = (xhat - x).array().abs().sum();
+    if (error > 1e-8)
+      int debug = 1;
+    EXPECT_LE(error, 1e-8);
+  }
+}
+
+TEST(Attitude3d, AverageAttitudeAutoDiff)
+{
+  for (int j = 0; j < NUM_ITERS; j++)
+  {
+    int numObs = 1000;
+    int noise_level = 1e-2;
+    quat::Quat x = quat::Quat::Random();
+    quat::Quat xhat = quat::Quat::Identity();
+
+    Problem problem;
+    problem.AddParameterBlock(xhat.data(), 4, new QuatAutoDiffParameterization());
+
+    for (int i = 0; i < numObs; i++)
+    {
+      quat::Quat sample = x + Vector3d::Random()*noise_level;
+      problem.AddResidualBlock(new QuatFactorAutoDiff(new QuatFactorCostFunction(sample.data())), NULL, xhat.data());
+    }
+
+    Solver::Options options;
+    options.max_num_iterations = 25;
+    options.linear_solver_type = ceres::DENSE_QR;
+    options.minimizer_progress_to_stdout = false;
+
+    Solver::Summary summary;
+    if (j == -1)
+    {
+      std::cout << "x:   " << x << "\n";
+      std::cout << "xhat:" << xhat << "\n";
+    }
+    ceres::Solve(options, &problem, &summary);
+    if (j == -1)
       std::cout << "xhat: " << xhat << std::endl;
     double error = (xhat - x).array().abs().sum();
     if (error > 1e-8)
