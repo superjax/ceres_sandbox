@@ -58,11 +58,12 @@ public:
     arr_ = boxplus(v).elements();
   }
 
-  Vec3 operator- (const Quat& q) const {return boxminus(q);}
+  template<typename T2>
+  Matrix<T2,3,1> operator- (const Quat<T2>& q) const {return boxminus(q);}
 
-  static Matrix3d skew(const Vec3& v)
+  static Matrix<T,3,3> skew(const Vec3& v)
   {
-    static Matrix3d skew_mat;
+    static Matrix<T,3,3> skew_mat;
     skew_mat << 0.0, -v(2), v(1),
                 v(2), 0.0, -v(0),
                 -v(1), v(0), 0.0;
@@ -105,14 +106,14 @@ public:
     return out;
   }
 
-  static Quat from_R(const Matrix3d& m)
+  static Quat from_R(const Matrix<T,3,3>& m)
   {
     Vec4 q;
     T tr = m.trace();
 
     if (tr > 0)
     {
-      T S = std::sqrt(tr+1.0) * 2.;
+      T S = sqrt(tr+1.0) * 2.;
       q << 0.25 * S,
            (m(1,2) - m(2,1)) / S,
            (m(2,0) - m(0,2)) / S,
@@ -120,7 +121,7 @@ public:
     }
     else if ((m(0,0) > m(1,1)) && (m(0,0) > m(2,2)))
     {
-      T S = std::sqrt(1.0 + m(0,0) - m(1,1) - m(2,2)) * 2.;
+      T S = sqrt(1.0 + m(0,0) - m(1,1) - m(2,2)) * 2.;
       q << (m(1,2) - m(2,1)) / S,
            0.25 * S,
            (m(1,0) + m(0,1)) / S,
@@ -128,7 +129,7 @@ public:
     }
     else if (m(1,1) > m(2,2))
     {
-      T S = std::sqrt(1.0 + m(1,1) - m(0,0) - m(2,2)) * 2.;
+      T S = sqrt(1.0 + m(1,1) - m(0,0) - m(2,2)) * 2.;
       q << (m(2,0) - m(0,2)) / S,
            (m(1,0) + m(0,1)) / S,
            0.25 * S,
@@ -136,7 +137,7 @@ public:
     }
     else
     {
-      T S = std::sqrt(1.0 + m(2,2) - m(0,0) - m(1,1)) * 2.;
+      T S = sqrt(1.0 + m(2,2) - m(0,0) - m(1,1)) * 2.;
       q << (m(0,1) - m(1,0)) / S,
            (m(2,0) + m(0,2)) / S,
            (m(2,1) + m(1,2)) / S,
@@ -148,21 +149,21 @@ public:
   static Quat from_axis_angle(const Vec3& axis, const T angle)
   {
     T alpha_2 = angle/2.0;
-    T sin_a2 = std::sin(alpha_2);
+    T sin_a2 = sin(alpha_2);
     Vec4 arr;
-    arr << std::cos(alpha_2), axis(0)*sin_a2, axis(1)*sin_a2, axis(2)*sin_a2;
+    arr << cos(alpha_2), axis(0)*sin_a2, axis(1)*sin_a2, axis(2)*sin_a2;
     arr /= arr.norm();
     return Quat(arr);
   }
 
   static Quat from_euler(const T roll, const T pitch, const T yaw)
   {
-    T cp = std::cos(roll/2.0);
-    T ct = std::cos(pitch/2.0);
-    T cs = std::cos(yaw/2.0);
-    T sp = std::sin(roll/2.0);
-    T st = std::sin(pitch/2.0);
-    T ss = std::sin(yaw/2.0);
+    T cp = cos(roll/2.0);
+    T ct = cos(pitch/2.0);
+    T cs = cos(yaw/2.0);
+    T sp = sin(roll/2.0);
+    T st = sin(pitch/2.0);
+    T ss = sin(yaw/2.0);
 
     Vec4 arr;
     arr << cp*ct*cs + sp*st*ss,
@@ -179,7 +180,7 @@ public:
     T d = u.dot(v);
     if (d < 0.99999999 && d > -0.99999999)
     {
-      T invs = 1.0/std::sqrt((2.0*(1.0+d)));
+      T invs = 1.0/sqrt((2.0*(1.0+d)));
       Vec3 xyz = u.cross(v*invs);
       q_arr(0) = 0.5/invs;
       q_arr.block<3,1>(1,0)=xyz;
@@ -214,25 +215,25 @@ public:
   Vec3 euler() const
   {
     Vec3 out;
-    out << std::atan2(2.0*(w()*x()+y()*z()), 1.0-2.0*(x()*x() + y()*y())),
-        std::asin(2.0*(w()*y() - z()*x())),
-        std::atan2(2.0*(w()*z()+x()*y()), 1.0-2.0*(y()*y() + z()*z()));
+    out << atan2(2.0*(w()*x()+y()*z()), 1.0-2.0*(x()*x() + y()*y())),
+        asin(2.0*(w()*y() - z()*x())),
+        atan2(2.0*(w()*z()+x()*y()), 1.0-2.0*(y()*y() + z()*z()));
     return out;
   }
   
   T roll() const
   {
-    return std::atan2(2.0*(w()*x()+y()*z()), 1.0-2.0*(x()*x() + y()*y()));
+    return atan2(2.0*(w()*x()+y()*z()), 1.0-2.0*(x()*x() + y()*y()));
   }
   
   T pitch() const
   {
-    return std::asin(2.0*(w()*y() - z()*x()));
+    return asin(2.0*(w()*y() - z()*x()));
   }
   
   T yaw() const
   {
-    return std::atan2(2.0*(w()*z()+x()*y()), 1.0-2.0*(y()*y() + z()*z()));
+    return atan2(2.0*(w()*z()+x()*y()), 1.0-2.0*(y()*y() + z()*z()));
   }
 
   Vec3 bar() const
@@ -240,7 +241,7 @@ public:
     return arr_.segment<3>(1);
   }
 
-  Matrix3d R() const
+  Matrix<T,3,3> R() const
   {
     T wx = w()*x();
     T wy = w()*y();
@@ -251,7 +252,7 @@ public:
     T yy = y()*y();
     T yz = y()*z();
     T zz = z()*z();
-    Matrix3d out;
+    Matrix<T,3,3> out;
     out << 1. - 2.*yy - 2.*zz, 2.*xy + 2.*wz,      2.*xz - 2.*wy,
            2.*xy - 2.*wz,      1. - 2.*xx - 2.*zz, 2.*yz + 2.*wx,
            2.*xz + 2.*wy,      2.*yz - 2.*wx,      1. - 2.*xx - 2.*yy;
@@ -336,16 +337,6 @@ public:
   Quat boxplus(const Vec3& delta) const
   {
     return otimes(exp(delta));
-  }
-  
-  Vec3 boxminus(const Quat& q) const
-  {
-    Quat dq = q.inverse().otimes(*this);
-    if (dq.w() < 0.0)
-    {
-      dq.arr_ *= -1.0;
-    }
-    return log(dq);
   }
 
   template<typename T2>

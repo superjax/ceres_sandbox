@@ -4,99 +4,7 @@
 #include "lie/quat.h"
 
 using namespace Eigen;
-
-template<typename T>
-void exp(const T* v, T* out)
-{
-  T norm_v = sqrt(v[0]*v[0] + v[1]*v[1] + v[2]*v[2]);
-  if (norm_v > 1e-4)
-  {
-    T v_scale = sin(norm_v/2.0)/norm_v;
-    out[0] = cos(norm_v/2.0);
-    out[1] = v_scale*v[0];
-    out[2] = v_scale*v[1];
-    out[3] = v_scale*v[2];
-  }
-  else
-  {
-    out[0] = (T)1.0;
-    out[1] = v[0]/2.0;
-    out[2] = v[1]/2.0;
-    out[3] = v[2]/2.0;
-
-    T out_norm = sqrt(out[0]*out[0] + out[1]*out[1] + out[2]*out[2] + out[3]*out[3]);
-    out[0] /= out_norm;
-    out[1] /= out_norm;
-    out[2] /= out_norm;
-    out[3] /= out_norm;
-  }
-}
-
-template<typename T>
-void boxminus(const double* q1, const T* q2, T* delta)
-{
-  double q1w = q1[0];
-  double q1x = -q1[1];
-  double q1y = -q1[2];
-  double q1z = -q1[3];
-
-  T q2w = q2[0];
-  T q2x = q2[1];
-  T q2y = q2[2];
-  T q2z = q2[3];
-
-  T qtilde[4];
-  qtilde[0] = q1w*q2w - q1x*q2x - q1y*q2y - q1z*q2z;
-  qtilde[1] = q1w*q2x + q1x*q2w + q1y*q2z - q1z*q2y;
-  qtilde[2] = q1w*q2y - q1x*q2z + q1y*q2w + q1z*q2x;
-  qtilde[3] = q1w*q2z + q1x*q2y - q1y*q2x + q1z*q2w;
-
-  T w = qtilde[0];
-
-  T nxyz = sqrt(qtilde[1]*qtilde[1] + qtilde[2]*qtilde[2] + qtilde[3]*qtilde[3]);
-  T scale = 2.0 * atan2(nxyz, w) / nxyz;
-  delta[0] = scale * qtilde[1];
-  delta[1] = scale * qtilde[2];
-  delta[2] = scale * qtilde[3];
-}
-
-template<typename T>
-void otimes(const T* q1, const T*q2, T * out)
-{
-  T q1w = q1[0];
-  T q1x = q1[1];
-  T q1y = q1[2];
-  T q1z = q1[3];
-
-  T q2w = q2[0];
-  T q2x = q2[1];
-  T q2y = q2[2];
-  T q2z = q2[3];
-
-  out[0] = q1w*q2w - q1x*q2x - q1y*q2y - q1z*q2z;
-  out[1] = q1w*q2x + q1x*q2w + q1y*q2z - q1z*q2y;
-  out[2] = q1w*q2y - q1x*q2z + q1y*q2w + q1z*q2x;
-  out[3] = q1w*q2z + q1x*q2y - q1y*q2x + q1z*q2w;
-}
-
-template<typename T>
-void invotimes(const T* q1, const T*q2, T * out)
-{
-  T q1w = q1[0];
-  T q1x = -q1[1];
-  T q1y = -q1[2];
-  T q1z = -q1[3];
-
-  T q2w = q2[0];
-  T q2x = q2[1];
-  T q2y = q2[2];
-  T q2z = q2[3];
-
-  out[0] = q1w*q2w - q1x*q2x - q1y*q2y - q1z*q2z;
-  out[1] = q1w*q2x + q1x*q2w + q1y*q2z - q1z*q2y;
-  out[2] = q1w*q2y - q1x*q2z + q1y*q2w + q1z*q2x;
-  out[3] = q1w*q2z + q1x*q2y - q1y*q2x + q1z*q2w;
-}
+using namespace quat;
 
 struct QuatPlus {
   template<typename T>
@@ -120,9 +28,10 @@ public:
             const double* delta,
             double* x_plus_delta) const
   {
-    double d_exp[4];
-    exp(delta, d_exp);
-    otimes(x, d_exp, x_plus_delta);
+    Quat<double> q(x);
+    Map<const Vector3d> d(delta);
+    Map<Vector4d> qp(x_plus_delta);
+    qp = (q + d).elements();
     return true;
   }
 
@@ -194,22 +103,20 @@ private:
 class QuatFactorCostFunction
 {
 public:
-  QuatFactorCostFunction(double *x)
-  {
-    q_[0] = x[0];
-    q_[1] = x[1];
-    q_[2] = x[2];
-    q_[3] = x[3];
-  }
+  QuatFactorCostFunction(double *x) :
+    q_(x)
+  {}
 
   template<typename T>
   bool operator()(const T* _q2, T* res) const
   {
-    boxminus(q_, _q2, res);
+    quat::Quat<T> q2(_q2);
+    Map<Matrix<T,3,1>> r(res);
+    r = q_ - q2;
     return true;
   }
 
 private:
-  double q_[4];
+  quat::Quat<double> q_;
 };
 typedef ceres::AutoDiffCostFunction<QuatFactorCostFunction, 3, 4> QuatFactorAutoDiff;
