@@ -7,6 +7,32 @@
 using namespace Eigen;
 using namespace xform;
 
+class XformParameterization : public ceres::LocalParameterization
+{
+public:
+  ~QuatParameterization() {}
+  bool Plus(const double* _x,
+            const double* _v,
+            double* _xp) const
+  {
+    Xformd x(_x);
+    Map<const Vector3d> v(_v);
+    Map<Vector7d> xp(_xp);
+    xp = (x + v).elements();
+    return true;
+  }
+
+  bool ComputeJacobian(const double* x, double* jacobian) const
+  {
+    jacobian[0] = -x[1]/2.0; jacobian[1]  = -x[2]/2.0; jacobian[2]  = -x[3]/2.0;
+    jacobian[3] =  x[0]/2.0; jacobian[4]  = -x[3]/2.0; jacobian[5]  =  x[2]/2.0;
+    jacobian[6] =  x[3]/2.0; jacobian[7]  =  x[0]/2.0; jacobian[8]  = -x[1]/2.0;
+    jacobian[9] = -x[2]/2.0; jacobian[10] =  x[1]/2.0; jacobian[11] =  x[0]/2.0;
+  }
+  int GlobalSize() const {return 7;}
+  int LocalSize() const {return 6;}
+};
+
 class XformFactorCostFunction
 {
 public:
@@ -19,7 +45,6 @@ public:
     {
         xform::Xform<T> x2(_x2);
         Map<Matrix<T,6,1>> r(res);
-//        r = Xform<T>::log(x2.inverse().otimes(xform_));
         r = xform_ - x2;
         return true;
     }
@@ -72,7 +97,6 @@ public:
     {
       Xform<T> xhat(_x);
       Map<Matrix<T,6,1>> res(_res);
-//      res = Omega_ * Xform<T>::log(xhat.inverse().otimes(xbar_));
       res = Omega_ * (xbar_ - xhat);
       Matrix<T,6,1> resdebug = res;
       return true;
