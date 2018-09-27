@@ -27,7 +27,7 @@ Uses `Transform1d` - the transform between each step with associated variance an
 ## `attitude.cpp`
 The second set of unit tests looks at attitude, and the `LocalParameterization` functionality in ceres.
 
-### Attitude3d.Check<xxxx>
+### Attitude3d.Check
 In writing the `QuatFactor` and `QuatParameterization` classes, I wanted to make sure that the associated `Plus`, `Evaluate` and `ComputeJacobian` functions were correct.  These were pretty straight-forward, except the jacobian of the `QuatFactor`.  That was terrible.  Anyway, these are good for sanity checking the operations being performed by the factor and local parameterization.
 
 ### Attitude3d.AverageAttitude
