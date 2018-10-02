@@ -17,19 +17,19 @@ using namespace std;
 
 TEST(IMU, 1DRobotSLAM)
 {
-  double ba = 0.25;
+  double ba = 0.1;
   double avar = 0;
   Robot1D Robot(ba, avar);
-  Robot.waypoints_ = {3, 6, 3, 7};
+  Robot.waypoints_ = {3, 0, 3, 0};
 
-  const int num_windows = 10;
-  int window_size = 100;
+  const int num_windows = 25;
+  int window_size = 50;
   double dt = 0.01;
 
   Eigen::Matrix<double, 4, 1> landmarks;
   landmarks << 11, 12, 51, 13;
   Eigen::Matrix<double, 4,1> lhat;
-  lhat << 10.0, 13.0, 50.0, 12.0;
+  lhat << 5.0, 13.0, -2.0, 12.0;
 
   double rvar = 1.0;
 

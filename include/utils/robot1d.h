@@ -12,9 +12,9 @@ public:
         v_ = 0;
         i_ = 0;
         t_ = 0;
-        prev_e_ = NAN;
-        kp_ = 0.01;
-        kd_ = 0.001;
+        prev_x_ = NAN;
+        kp_ = 0.3;
+        kd_ = 0.003;
         ba_ = _ba;
 
         xhat_ = x_;
@@ -30,13 +30,13 @@ public:
     void step(double dt)
     {
         if (std::abs(x_ - waypoints_[i_]) < 1e-2)
-            i_++;
+            i_ = (i_ + 1) % waypoints_.size();
 
         // propagate dynamics
         double e = waypoints_[i_] - x_;
-        if (!std::isfinite(prev_e_))
-          prev_e_ = e;
-        a_ = kp_*e + kd_ * (prev_e_ - e)/dt;
+        if (!std::isfinite(prev_x_))
+          prev_x_ = x_;
+        a_ = kp_*e + kd_ * (prev_x_ - x_)/dt;
         x_ += v_ * dt;
         v_ += a_ * dt;
         t_ += dt;
@@ -57,7 +57,7 @@ public:
     double a_;
     double kp_;
     double kd_;
-    double prev_e_;
+    double prev_x_;
     int i_;
 
     std::default_random_engine gen_;
