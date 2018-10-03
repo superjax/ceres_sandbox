@@ -2,10 +2,14 @@
 #include <math.h>
 #include <random>
 
+#include <Eigen/Core>
+
+using namespace Eigen;
+
 class Robot1D
 {
 public:
-    Robot1D(double _ba, double var) : normal_(0.0, sqrt(var))
+    Robot1D(double _ba, Matrix2d Q) : normal_(0.0, 1.0)
     {
         x_ = 0;
         a_ = 0;
@@ -15,7 +19,10 @@ public:
         prev_x_ = NAN;
         kp_ = 0.3;
         kd_ = 0.003;
-        ba_ = _ba;
+        b_ = _ba;
+
+        a_stdev_ = sqrt(Q(0,0));
+        b_stdev_ = sqrt(Q(1,1));
 
         xhat_ = x_;
         vhat_ = v_;
@@ -40,9 +47,10 @@ public:
         x_ += v_ * dt;
         v_ += a_ * dt;
         t_ += dt;
+        b_ += normal_(gen_)*b_stdev_*dt;
 
         // propagate estimates
-        ahat_ = a_ + ba_;
+        ahat_ = a_ + normal_(gen_)*a_stdev_ + b_;
     }
 
     double xhat_;
@@ -51,7 +59,7 @@ public:
     double t_;
     std::vector<double> waypoints_;
 
-    double ba_;
+    double b_;
     double x_;
     double v_;
     double a_;
@@ -59,6 +67,9 @@ public:
     double kd_;
     double prev_x_;
     int i_;
+
+    double a_stdev_;
+    double b_stdev_;
 
     std::default_random_engine gen_;
     std::normal_distribution<double> normal_;

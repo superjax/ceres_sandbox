@@ -34,7 +34,7 @@ private:
 
 };
 
-class Range1dFactorVelocity : public ceres::SizedCostFunction<1,1,2>
+class Range1dFactorVelocity : public ceres::SizedCostFunction<1,1,3>
 {
 public:
     Range1dFactorVelocity(double z, double var) :
@@ -47,8 +47,9 @@ public:
         double l = parameters[0][0];
         double x = parameters[1][0];
 //        double v = parameters[1][1];
+//        double b = parameters[1][2];
         double neg = 1.0;
-        residuals[0] = abs(range_ - (l - x)) / var_;
+        residuals[0] = (range_ - (l - x)) / var_;
         if (residuals[0] < range_ - (l - x))
         {
           neg = -1.0;
@@ -65,6 +66,7 @@ public:
             {
                 jacobians[1][0] = neg * 1.0/var_;
                 jacobians[1][1] = 0;
+                jacobians[1][2] = 0;
             }
         }
         return true;
