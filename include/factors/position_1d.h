@@ -7,7 +7,7 @@
 
 class Position1dFactor : public ceres::SizedCostFunction<1,1>
 {
- public:
+public:
   Position1dFactor(double x) :
     position(x)
   {}
@@ -24,6 +24,7 @@ class Position1dFactor : public ceres::SizedCostFunction<1,1>
     return true;
   }
 
- protected:
+protected:
   double position;
 };
+
