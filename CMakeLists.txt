@@ -11,18 +11,12 @@ include_directories(include
     ${CERES_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS})
 
-add_executable(position src/position.cpp)
-target_link_libraries(position gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(attitude src/attitude.cpp)
-target_link_libraries(attitude gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(pose src/pose.cpp)
-target_link_libraries(pose gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(imu src/imu.cpp)
-target_link_libraries(imu gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
-
-add_executable(lie_test include/lie/tests.cpp)
-target_link_libraries(lie_test gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
-
+add_executable(ceres_tests
+    include/lie/tests.cpp
+    src/position_1d.cpp
+    src/position_3d.cpp
+    src/attitude.cpp
+    src/pose.cpp
+    src/imu_1d.cpp
+)
+target_link_libraries(ceres_tests gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})

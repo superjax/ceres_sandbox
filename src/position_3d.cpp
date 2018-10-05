@@ -1,12 +1,14 @@
-#include "position_3d.h"
 #include <ceres/ceres.h>
 #include "gtest/gtest.h"
 #include "Eigen/Dense"
 
+#include "factors/position_3d.h"
+
 using namespace ceres;
 using namespace Eigen;
 
-TEST(Position3D, Optimize)
+
+TEST(Position3D, AveragePoints)
 {
   Vector3d x = (Vector3d() << 1.0, 2.0, 3.0).finished();
   int numObs = 10000;
@@ -30,7 +32,7 @@ TEST(Position3D, Optimize)
   Solver::Options options;
   options.max_num_iterations = 25;
   options.linear_solver_type = ceres::DENSE_QR;
-  options.minimizer_progress_to_stdout = true;
+  options.minimizer_progress_to_stdout = false;
 
   Solver::Summary summary;
   ceres::Solve(options, &problem, &summary);

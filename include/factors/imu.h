@@ -5,39 +5,35 @@
 
 using namespace Eigen;
 
-class Pose1DConstraint : public ceres::SizedCostFunction<2,2,3>
+class Pose1DConstraint : public ceres::SizedCostFunction<2,2>
 {
 public:
-  Pose1DConstraint(Matrix2d cov)
+  Pose1DConstraint(Vector2d z, Matrix2d cov)
   {
+    z_ = z;
     Omega_ = cov.inverse();
   }
 
   virtual bool Evaluate(double const* const* parameters, double* residuals, double** jacobians) const
   {
-    Map<const Vector2d> xi(parameters[0]);
-    Map<const Vector3d> xj(parameters[1]);
+    Map<const Vector2d> x(parameters[0]);
     Map<Vector2d> r(residuals);
-    r = xi - xj.block<2,1>(0,0);
+    r = x - z_;
     r = Omega_ * r;
 
     if (jacobians)
     {
       if (jacobians[0])
       {
-        jacobians[0][0] = 1; jacobians[0][1] = 0;
-        jacobians[0][2] = 0; jacobians[0][3] = 1;
-      }
-      if (jacobians[1])
-      {
-        jacobians[1][0] = -1; jacobians[1][1] = 0;  jacobians[1][2] = 0;
-        jacobians[1][3] = 0;  jacobians[1][4] = -1; jacobians[1][5] = 0;
+        Map<Matrix2d> J(jacobians[0]);
+        J = Omega_;
       }
     }
     return true;
   }
 
 protected:
+  Vector2d z_;
   Matrix2d Omega_;
 };
 

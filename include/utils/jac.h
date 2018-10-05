@@ -3,7 +3,7 @@
 #include <Eigen/Core>
 
 
-Eigen::MatrixXd calc_jac(std::function<Eigen::MatrixXd(Eigen::MatrixXd)> fun, Eigen::MatrixXd x)
+inline Eigen::MatrixXd calc_jac(std::function<Eigen::MatrixXd(Eigen::MatrixXd)> fun, Eigen::MatrixXd x)
 {
   Eigen::MatrixXd y = fun(x);
   int cols = x.rows();

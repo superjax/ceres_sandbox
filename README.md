@@ -8,7 +8,7 @@ Borrowing off the _factor graph_ mindset (I'm from a SLAM background), I organiz
 
 
 ## `position.cpp`
-The first set of unit tests looks at the simplest problems faced by ceres.
+The first set of unit tests looks at the simplest problems.
 
 ### Position1D.AveragePoints
 This finds the average of a bunch of 1D samples.  It's a little like opening a piggy bank with a jackhammer, but we gotta start somewhere.  Uses the `Position1DFactor` with analytical (trivial) jacobians.
@@ -27,7 +27,7 @@ Uses `Transform1d` - the transform between each step with associated variance an
 ## `attitude.cpp`
 The second set of unit tests looks at attitude, and the `LocalParameterization` functionality in ceres.
 
-### Attitude3d.Check
+### Attitude3d.Check*
 In writing the `QuatFactor` and `QuatParameterization` classes, I wanted to make sure that the associated `Plus`, `Evaluate` and `ComputeJacobian` functions were correct.  These were pretty straight-forward, except the jacobian of the `QuatFactor`.  That was terrible.  Anyway, these are good for sanity checking the operations being performed by the factor and local parameterization.
 
 ### Attitude3d.AverageAttitude
@@ -50,10 +50,16 @@ I'm using full 6DOF edges and nodes in this graph and the first node is fixed at
 I'm also using auto-differentiated Factors and Local Parameterizations
 
 ## `imu.cpp`
-Next, I wanted to look into estimating motion of a robot using IMU inputs.
+Next, I wanted to look into estimating motion of a robot using IMU inputs.  The following examples use a simulated robot that moves at a constant rate along the real line, and but has a noisy IMU with a constant bias.
+
+### IMU.1DRobotSingleWindow
+This example looks at a single preintegration window with the origin pose set constant and a direct measurement of the second pose.  Basically, this shows that the unknown IMU bias can be inferred using my `Imu1DFactorAutoDiff` factor.
+
+### IMU.1DRobotLocalization
+This example looks at 100 preintegration intervals with with a common constant unknown bias.  The origin is set constant, and the final pose is given a very strong position and velocity measurement.  The IMU bias is inferred using my `IMU1DFactorAutoDiff` factor.
 
 ### IMU.1DRobotSLAM
-For this example, I have a simulated robot that moves at a constant rate along the real line, and but has a noisy IMU with a constant bias.  Using the `Range1dFactor` with range measurements to several landmarks also on the real line and the `IMU1dFactor` to perform 1D SLAM.
+Using the `Range1dFactor` with range measurements to several landmarks also on the real line and the `IMU1dFactor` to perform 1D SLAM.
 
 ### IMU.3DRobotSmoothing
 In this example, I have a simulate 3D rigid body which moves in space over all 6 degrees of freedom.  I have a simulated IMU with constant accelerometer and rate gyro biases.  I also am using the `XformNodeFactor` to apply measurements of pose directly and therefore infer the biases.
@@ -71,4 +77,4 @@ Next, I wanted to use the ceres solver to deal with the projection associated wi
 This example simulates the calibration of a pinhole camera.  A 3D rigid body gets simulated pixel measurements to known landmarks in the camera FOV. The camera intrinsics are estimated.
 
 ### Camera.Transform
-This example estimates the transform between a simulated camera, the body frame, camera intrinsics and the IMU frame given pose measurements, pixel measurements, and IMU measurements 
+This example estimates the transform between a simulated camera, the body frame, camera intrinsics and the IMU frame given pose measurements, pixel measurements, and IMU measurements

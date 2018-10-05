@@ -47,23 +47,23 @@ public:
         double l = parameters[0][0];
         double x = parameters[1][0];
 //        double v = parameters[1][1];
-        double neg = 1.0;
+//        double neg = 1.0;
         residuals[0] = (range_ - (l - x)) / var_;
-        if (residuals[0] < range_ - (l - x))
-        {
-          neg = -1.0;
-          residuals[0] *= 1.0;
-        }
+//        if (residuals[0] < range_ - (l - x))
+//        {
+//          neg = -1.0;
+//          residuals[0] *= 1.0;
+//        }
 
         if (jacobians)
         {
             if (jacobians[0])
             {
-                jacobians[0][0] = neg * -1.0/var_;
+                jacobians[0][0] = -1.0/var_;
             }
             if (jacobians[1])
             {
-                jacobians[1][0] = neg * 1.0/var_;
+                jacobians[1][0] = 1.0/var_;
                 jacobians[1][1] = 0;
             }
         }

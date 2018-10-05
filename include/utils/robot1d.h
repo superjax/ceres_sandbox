@@ -51,7 +51,7 @@ public:
     b_ += normal_(gen_)*b_stdev_*dt;
 
     // propagate estimates
-    ahat_ = a_ + normal_(gen_)*a_stdev_ + b_;
+    ahat_ = a_ + normal_(gen_)*a_stdev_ - b_;
   }
 
   double xhat_;
