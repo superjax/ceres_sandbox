@@ -6,8 +6,8 @@
 
 #include "gtest/gtest.h"
 
-#include "lie/xform.h"
-#include "lie/math_helper.h"
+#include "xform.h"
+#include "support.h"
 #include "factors/SE3.h"
 
 #define NUM_ITERS 1

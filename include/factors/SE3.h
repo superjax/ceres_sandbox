@@ -2,7 +2,7 @@
 
 #include <ceres/ceres.h>
 #include "factors/attitude_3d.h"
-#include "lie/xform.h"
+#include "xform.h"
 
 using namespace Eigen;
 using namespace xform;
@@ -45,7 +45,8 @@ public:
     {
         xform::Xform<T> x2(_x2);
         Map<Matrix<T,6,1>> r(res);
-        r = xform_ - x2;
+//        r = xform_ - x2;
+        r = Xform<T>::log(x2.inverse().otimes(xform_));
         return true;
     }
 private:
@@ -71,7 +72,10 @@ public:
       Xform<T> xhat_j(_xj);
       Xform<T> ehat_12 = xhat_i.inverse() * xhat_j;
       Map<Matrix<T,6,1>> res(_res);
-      res = Omega_ij_ * (ebar_ij_ - ehat_12);
+      ehat_12.otimes(ebar_ij_);
+//      res = Omega_ij_ * (ebar_ij_.boxminus(ehat_12));
+//      res = Omega_ij_ * (Xform<T>::log(ehat_12.inverse().otimes(ebar_ij_)));
+//      res = Xform<T>::log(ehat_12.inverse().otimes(ebar_ij_));
       Matrix<T,6,1> resdebug = (ebar_ij_ - ehat_12);
       return true;
     }

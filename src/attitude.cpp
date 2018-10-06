@@ -1,4 +1,4 @@
-#include "lie/quat.h"
+#include "quat.h"
 #include <ceres/ceres.h>
 #include "factors/attitude_3d.h"
 #include "utils/jac.h"

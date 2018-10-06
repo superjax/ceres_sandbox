@@ -8,11 +8,12 @@ find_package(Eigen3 REQUIRED)
 find_package(GTest REQUIRED)
 
 include_directories(include
+    lib/geometry/include
     ${CERES_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS})
 
+add_subdirectory(lib/geometry)
 add_executable(ceres_tests
-    include/lie/tests.cpp
     src/position_1d.cpp
     src/position_3d.cpp
     src/attitude.cpp
@@ -20,4 +21,4 @@ add_executable(ceres_tests
     src/imu_1d.cpp
     src/imu_3d.cpp
 )
-target_link_libraries(ceres_tests gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(ceres_tests geometry gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
