@@ -19,5 +19,6 @@ add_executable(ceres_tests
     src/attitude.cpp
     src/pose.cpp
     src/imu_1d.cpp
+    src/time_offset.cpp
 )
 target_link_libraries(ceres_tests geometry gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})

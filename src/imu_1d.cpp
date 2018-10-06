@@ -232,8 +232,6 @@ TEST(Imu1D, 1DRobotSLAM)
     for (int l = 0; l < landmarks.size(); l++)
     {
       double rbar = (landmarks[l] - Robot.x_) + normal(gen)*sqrt(rvar);
-//      problem.AddParameterBlock(lhat.data()+l, 1);
-//      problem.SetParameterBlockConstant(lhat.data()+l);
       problem.AddResidualBlock(new Range1dFactorVelocity(rbar, rvar), NULL, lhat.data()+l, xhat.data()+2*win);
     }
   }

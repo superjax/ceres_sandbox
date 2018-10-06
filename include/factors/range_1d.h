@@ -46,15 +46,7 @@ public:
     {
         double l = parameters[0][0];
         double x = parameters[1][0];
-//        double v = parameters[1][1];
-//        double neg = 1.0;
         residuals[0] = (range_ - (l - x)) / var_;
-//        if (residuals[0] < range_ - (l - x))
-//        {
-//          neg = -1.0;
-//          residuals[0] *= 1.0;
-//        }
-
         if (jacobians)
         {
             if (jacobians[0])
