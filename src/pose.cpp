@@ -221,5 +221,4 @@ TEST(Pose, GraphSLAM)
   log_file.close();
 
   EXPECT_LE(RMSE, 0.5);
-
 }

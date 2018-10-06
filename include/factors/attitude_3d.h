@@ -103,9 +103,10 @@ private:
 class QuatFactorCostFunction
 {
 public:
-  QuatFactorCostFunction(double *x) :
-    q_(x)
-  {}
+  QuatFactorCostFunction(double *x)
+  {
+    q_ = Quatd(x);
+  }
 
   template<typename T>
   bool operator()(const T* _q2, T* res) const

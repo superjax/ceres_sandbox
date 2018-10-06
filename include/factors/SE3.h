@@ -36,17 +36,17 @@ using namespace xform;
 class XformFactorCostFunction
 {
 public:
-    XformFactorCostFunction(double *x) :
-        xform_(x)
-    {}
+    XformFactorCostFunction(double *x)
+    {
+      xform_ = Xformd(x);
+    }
 
     template<typename T>
     bool operator()(const T* _x2, T* res) const
     {
         xform::Xform<T> x2(_x2);
         Map<Matrix<T,6,1>> r(res);
-//        r = xform_ - x2;
-        r = Xform<T>::log(x2.inverse().otimes(xform_));
+        r = xform_ - x2;
         return true;
     }
 private:
@@ -59,9 +59,9 @@ typedef ceres::AutoDiffCostFunction<XformFactorCostFunction, 6, 7> XformFactorAu
 class XformEdgeFactorCostFunction
 {
 public:
-    XformEdgeFactorCostFunction(double *_ebar_ij, double *_P_ij) :
-      ebar_ij_(_ebar_ij)
+    XformEdgeFactorCostFunction(double *_ebar_ij, double *_P_ij)
     {
+      ebar_ij_ = Xformd(_ebar_ij);
       Omega_ij_ = Map<const Matrix6d, RowMajor>(_P_ij).inverse();
     }
 
@@ -72,8 +72,8 @@ public:
       Xform<T> xhat_j(_xj);
       Xform<T> ehat_12 = xhat_i.inverse() * xhat_j;
       Map<Matrix<T,6,1>> res(_res);
-      ehat_12.otimes(ebar_ij_);
-//      res = Omega_ij_ * (ebar_ij_.boxminus(ehat_12));
+//      ehat_12.otimes(ebar_ij_);
+      res = Omega_ij_ * (ebar_ij_.boxminus(ehat_12));
 //      res = Omega_ij_ * (Xform<T>::log(ehat_12.inverse().otimes(ebar_ij_)));
 //      res = Xform<T>::log(ehat_12.inverse().otimes(ebar_ij_));
       Matrix<T,6,1> resdebug = (ebar_ij_ - ehat_12);
@@ -90,9 +90,9 @@ typedef ceres::AutoDiffCostFunction<XformEdgeFactorCostFunction, 6, 7, 7> XformE
 class XformNodeFactorCostFunction
 {
 public:
-    XformNodeFactorCostFunction(const double *_xbar, const double *_P) :
-      xbar_(_xbar)
+    XformNodeFactorCostFunction(const double *_xbar, const double *_P)
     {
+      xbar_ = Xformd(_xbar);
       Omega_ = Map<const Matrix6d, RowMajor>(_P).inverse();
     }
 
@@ -106,7 +106,7 @@ public:
       return true;
     }
 private:
-    xform::Xform<double> xbar_; // Measurement of Node
+    xform::Xformd xbar_; // Measurement of Node
     Matrix6d Omega_; // Covariance of measurement
 };
 typedef ceres::AutoDiffCostFunction<XformNodeFactorCostFunction, 6, 7> XformNodeFactorAutoDiff;
