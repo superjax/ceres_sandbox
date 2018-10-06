@@ -7,7 +7,7 @@ So, I broke the problem into little peices and wrote a bunch of simple cases to 
 Borrowing off the _factor graph_ mindset (I'm from a SLAM background), I organized all my cost functions into _factors_, found in `include/factors`
 
 
-## `position.cpp`
+## Position1D
 The first set of unit tests looks at the simplest problems.
 
 ### Position1D.AveragePoints
@@ -16,15 +16,18 @@ This finds the average of a bunch of 1D samples.  It's a little like opening a p
 ### Position1D.AveragePointsWithParameterBlock
 This is exactly like `Position1D.AveragePoints`, but it adds a (redundant) parameter block.  Just to test how `problem.AddParameterBlock` works.
 
-### Position3D.AveragePoints
-This finds the average of a bunch of 1D samples.  Again, overkill, but uses the `Position3DFactor` with analytical jacobians.  I also used this example to explore how Eigen interacts with Ceres.
-
 ### Robot1D.SLAM
 This performs 1D SLAM (haha!).  There is a 1D robot which takes a 1m step along the real line, 7 times.  Each step, he gets a (noisy) range measurement to 3 landmarks (also on the real line).  It's a pretty trivial problem, but I wanted to explore how to handle multiple factors, and handle measurement variance in my factors.
 
 Uses `Transform1d` - the transform between each step with associated variance and `Range1dFactor` - the range to a landmark and associated variance.
 
-## `attitude.cpp`
+
+## Position3D
+### Position3D.AveragePoints
+This finds the average of a bunch of 1D samples.  Again, overkill, but uses the `Position3DFactor` with analytical jacobians.  I also used this example to explore how Eigen interacts with Ceres.
+
+
+## Attitude3D
 The second set of unit tests looks at attitude, and the `LocalParameterization` functionality in ceres.
 
 ### Attitude3d.Check*
@@ -36,20 +39,20 @@ This takes a quaternion and creates 1000 samples normally distributed about this
 ### Attitude3d.AverageAttitudeAutoDiff
 Finds the average attitude of a sample of 1000 attitude measurements using the autodiff functionality for both the localparameterization and cost function.  I also used my templated `Quat` library and let Ceres auto-diff through my library (based on Eigen).
 
-## `pose.cpp`
+## Pose3D
 Next, I figured I could do some pose-graph SLAM in SE3
 
-### Pose.AveragePoseAutoDiff
+### Pose3D.AveragePoseAutoDiff
 As before, just to exercise auto differentiation over a tangent space, I used ceres to find the average of a set of 1000 random `Xform` samples. (using my templated `Xform` library to represent members of homogeneous transforms)
 
-### Pose.GraphSLAMAutoDiff
+### Pose3D.GraphSLAM
 This is the most basic kind of non-trivial SLAM.  We have a bunch of nodes, and edges between nodes.  We also have loop-closures so that the graph is over-constrained and require optimization to find the maximum-likelihood configuration of all the nodes and edges.
 
 I'm using full 6DOF edges and nodes in this graph and the first node is fixed at the origin.
 
 I'm also using auto-differentiated Factors and Local Parameterizations
 
-## `imu.cpp`
+## Imu1D
 Next, I wanted to look into estimating motion of a robot using IMU inputs.  The following examples use a simulated robot that moves at a constant rate along the real line, and but has a noisy IMU with a constant bias.
 
 ### IMU.1DRobotSingleWindow
@@ -60,6 +63,14 @@ This example looks at 100 preintegration intervals with with a common constant u
 
 ### IMU.1DRobotSLAM
 Using the `Range1dFactor` with range measurements to several landmarks also on the real line and the `IMU1dFactor` to perform 1D SLAM.
+
+### IMU.dydb
+In writing the `IMU1dFactor`, I had to figure out the jacobian to map changes in bias to changes in the measurement.  This test proves that the jacobian I cam up with is right.
+
+## TimeOffset
+Another problem in Robotics is time synchronization between different sensors.  This example is a 1D robot performing SLAM with IMU preintegration as in the `IMU.1DRobotSLAM` example, except that I also have a measurement of each node with a small time delay.  I use the `Position1dFactorWithTimeOffset` factor to estimate this delay.
+
+# TODO:
 
 ### IMU.3DRobotSmoothing
 In this example, I have a simulate 3D rigid body which moves in space over all 6 degrees of freedom.  I have a simulated IMU with constant accelerometer and rate gyro biases.  I also am using the `XformNodeFactor` to apply measurements of pose directly and therefore infer the biases.
