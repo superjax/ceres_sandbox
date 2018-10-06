@@ -7,32 +7,6 @@
 using namespace Eigen;
 using namespace xform;
 
-//class XformParameterization : public ceres::LocalParameterization
-//{
-//public:
-//  ~XformParameterization() {}
-//  bool Plus(const double* _x,
-//            const double* _v,
-//            double* _xp) const
-//  {
-//    Xformd x(_x);
-//    Map<const Vector3d> v(_v);
-//    Map<Vector6d> xp(_xp);
-//    xp = (x + v).elements();
-//    return true;
-//  }
-
-//  bool ComputeJacobian(const double* x, double* jacobian) const
-//  {
-//    jacobian[0] = -x[1]/2.0; jacobian[1]  = -x[2]/2.0; jacobian[2]  = -x[3]/2.0;
-//    jacobian[3] =  x[0]/2.0; jacobian[4]  = -x[3]/2.0; jacobian[5]  =  x[2]/2.0;
-//    jacobian[6] =  x[3]/2.0; jacobian[7]  =  x[0]/2.0; jacobian[8]  = -x[1]/2.0;
-//    jacobian[9] = -x[2]/2.0; jacobian[10] =  x[1]/2.0; jacobian[11] =  x[0]/2.0;
-//  }
-//  int GlobalSize() const {return 7;}
-//  int LocalSize() const {return 6;}
-//};
-
 class XformFactorCostFunction
 {
 public:
@@ -72,11 +46,7 @@ public:
       Xform<T> xhat_j(_xj);
       Xform<T> ehat_12 = xhat_i.inverse() * xhat_j;
       Map<Matrix<T,6,1>> res(_res);
-//      ehat_12.otimes(ebar_ij_);
       res = Omega_ij_ * (ebar_ij_.boxminus(ehat_12));
-//      res = Omega_ij_ * (Xform<T>::log(ehat_12.inverse().otimes(ebar_ij_)));
-//      res = Xform<T>::log(ehat_12.inverse().otimes(ebar_ij_));
-      Matrix<T,6,1> resdebug = (ebar_ij_ - ehat_12);
       return true;
     }
 private:
@@ -102,7 +72,6 @@ public:
       Xform<T> xhat(_x);
       Map<Matrix<T,6,1>> res(_res);
       res = Omega_ * (xbar_ - xhat);
-      Matrix<T,6,1> resdebug = res;
       return true;
     }
 private:
@@ -120,9 +89,7 @@ struct XformPlus {
   {
     Xform<T> q(x);
     Map<const Matrix<T,6,1>> d(delta);
-    Matrix<T,6,1> ddebug(delta);
     Map<Matrix<T,7,1>> qp(x_plus_delta);
-
     qp = (q + d).elements();
     return true;
   }
