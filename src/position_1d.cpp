@@ -63,7 +63,7 @@ TEST(Position1D, AveragePointsWithParameterBlock)
   EXPECT_NEAR(xhat, x, 1e-3);
 }
 
-TEST(Robot1D, SLAM)
+TEST(Position1D, SLAM)
 {
   double rvar = 1e-5;
   double evar = 1e-1;

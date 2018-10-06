@@ -2,7 +2,7 @@
 
 #include <ceres/ceres.h>
 #include "factors/attitude_3d.h"
-#include "xform.h"
+#include "geometry/xform.h"
 
 using namespace Eigen;
 using namespace xform;

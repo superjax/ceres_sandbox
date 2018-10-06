@@ -18,7 +18,7 @@ using namespace std;
 
 #define NUM_ITERS 1
 
-TEST(IMU, 1DRobotSingleWindow)
+TEST(Imu1D, 1DRobotSingleWindow)
 {
   double ba = 10.0;
   double bahat = 0.00;
@@ -92,7 +92,7 @@ TEST(IMU, 1DRobotSingleWindow)
   EXPECT_NEAR(bahat, ba, 1e-1);
 }
 
-TEST(IMU, 1DRobotLocalization)
+TEST(Imu1D, 1DRobotLocalization)
 {
   double ba = 10.0;
   double bahat = 0.00;
@@ -170,7 +170,7 @@ TEST(IMU, 1DRobotLocalization)
   EXPECT_NEAR(bahat, ba, 1e-1);
 }
 
-TEST(IMU, 1DRobotSLAM)
+TEST(Imu1D, 1DRobotSLAM)
 {
   double ba = 0.2;
   double bahat = 0.00;
@@ -261,82 +261,7 @@ TEST(IMU, 1DRobotSLAM)
 
 }
 
-
-//TEST(IMU, CheckJacobians)
-//{
-//  for (int j = 0; j < NUM_ITERS; j++)
-//  {
-//    Vector3d x1, x2;
-//    double* _x[2];
-//    _x[0] = x1.data();
-//    _x[1] = x2.data();
-
-//    Eigen::Matrix<double, 3,3, RowMajor> J1, J2;
-//    Eigen::Matrix<double, 3,3> JFD1, JFD2;
-//    double* _j[2];
-//    _j[0] = J1.data();
-//    _j[1] = J2.data();
-
-
-
-//    // create the factor and integrate a window of imu data
-//    double ba = 0.1;
-//    double bahat = 0.09;
-//    Eigen::Matrix2d Q = (Eigen::Matrix2d() << 0.001, 0, 0, 1e-6).finished();
-//    Robot1D Robot(ba, Q);
-//    Robot.waypoints_ = {3, 0, 3, 0};
-//    Imu1DFactor* factor = new Imu1DFactor(0, bahat, Q);
-//    x1(0) = Robot.xhat_;
-//    x1(1) = Robot.vhat_;
-//    x1(2) = bahat;
-//    double dt = 0.001;
-//    for (int i = 0; i < 500; i++)
-//    {
-//      Robot.step(dt);
-//      factor->integrate(Robot.t_, Robot.ahat_);
-//    }
-//    x2 = factor->estimate_xj(x1);
-//    factor->finished();
-
-
-
-//    // Get Analytical Jacobians
-//    Vector3d r;
-//    factor->Evaluate(_x, r.data(), _j);
-
-
-
-//    // Perform Finite Differencing
-//    auto f1 = [factor, x2](MatrixXd x)
-//    {
-//      const double* _x[2];
-//      _x[0] = x.data();
-//      _x[1] = x2.data();
-//      Vector3d y;
-//      factor->Evaluate(_x, y.data(), NULL);
-//      return y;
-//    };
-//    auto f2 = [factor, x1](MatrixXd x)
-//    {
-//      const double* _x[2];
-//      _x[0] = x1.data();
-//      _x[1] = x.data();
-//      Vector3d y;
-//      factor->Evaluate(_x, y.data(), NULL);
-//      return y;
-//    };
-//    JFD1 = calc_jac(f1, x1);
-//    JFD2 = calc_jac(f2, x2);
-//    [](){};
-
-//    cout << "J1: \n" << J1 << "\n";
-//    cout << "JFD1: \n" << JFD1 << "\n";
-//    cout << "J2: \n" << J2 << "\n";
-//    cout << "JFD2: \n" << JFD2 << "\n";
-//  }
-//}
-
-TEST (IMU, dydb)
+TEST (Imu1D, dydb)
 {
   std::vector<double> a;
   std::vector<double> dt;

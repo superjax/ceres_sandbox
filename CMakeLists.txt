@@ -8,7 +8,7 @@ find_package(Eigen3 REQUIRED)
 find_package(GTest REQUIRED)
 
 include_directories(include
-    lib/geometry/include
+    lib
     ${CERES_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS})
 

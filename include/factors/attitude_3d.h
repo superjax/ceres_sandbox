@@ -1,7 +1,7 @@
 #pragma once
 
 #include <ceres/ceres.h>
-#include "quat.h"
+#include "geometry/quat.h"
 
 using namespace Eigen;
 using namespace quat;

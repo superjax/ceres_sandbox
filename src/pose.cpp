@@ -6,8 +6,8 @@
 
 #include "gtest/gtest.h"
 
-#include "xform.h"
-#include "support.h"
+#include "geometry/xform.h"
+#include "geometry/support.h"
 #include "factors/SE3.h"
 
 #define NUM_ITERS 1
@@ -18,7 +18,7 @@ using namespace Eigen;
 using namespace std;
 using namespace xform;
 
-TEST(Pose, AveragePoseAutoDiff)
+TEST(Pose3D, AveragePoseAutoDiff)
 {
   for (int j = 0; j < NUM_ITERS; j++)
   {
@@ -57,7 +57,7 @@ TEST(Pose, AveragePoseAutoDiff)
   }
 }
 
-TEST(Pose, GraphSLAM)
+TEST(Pose3D, GraphSLAM)
 {
   // Input between nodes
   Vector6d u;
