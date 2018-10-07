@@ -1,0 +1,3 @@
+[submodule "lib/multirotor_sim"]
+	path = lib/multirotor_sim
+	url = git@github.com:superjax/multirotor_sim.git

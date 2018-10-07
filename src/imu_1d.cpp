@@ -9,7 +9,7 @@
 #include "factors/range_1d.h"
 
 #include "utils/robot1d.h"
-#include "factors/imu.h"
+#include "factors/imu_1d.h"
 #include "utils/jac.h"
 
 using namespace ceres;

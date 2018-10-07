@@ -9,16 +9,27 @@ find_package(GTest REQUIRED)
 
 include_directories(include
     lib
+    lib/multirotor_sim/include
     ${CERES_INCLUDE_DIRS}
     ${EIGEN3_INCLUDE_DIRS})
 
 add_subdirectory(lib/geometry)
+add_subdirectory(lib/multirotor_sim)
+
 add_executable(ceres_tests
     src/position_1d.cpp
     src/position_3d.cpp
     src/attitude.cpp
     src/pose.cpp
     src/imu_1d.cpp
+    src/imu_3d.cpp
     src/time_offset.cpp
 )
-target_link_libraries(ceres_tests geometry gtest gtest_main ${GTEST_LIBRARIES} ${CERES_LIBRARIES})
+target_link_libraries(ceres_tests
+    geometry
+    multirotor_sim
+    gtest
+    gtest_main
+    ${GTEST_LIBRARIES}
+    ${CERES_LIBRARIES}
+)

@@ -60,10 +60,10 @@ typedef ceres::AutoDiffCostFunction<XformEdgeFactorCostFunction, 6, 7, 7> XformE
 class XformNodeFactorCostFunction
 {
 public:
-    XformNodeFactorCostFunction(const double *_xbar, const double *_P)
+    XformNodeFactorCostFunction(const Vector7d _xbar, const Matrix6d _P)
     {
       xbar_ = Xformd(_xbar);
-      Omega_ = Map<const Matrix6d, RowMajor>(_P).inverse();
+      Omega_ = _P.inverse();
     }
 
     template<typename T>
