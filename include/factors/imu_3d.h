@@ -129,7 +129,8 @@ public:
         r.block(BETA, 0, 3, 1) = (vj + Xi.q_.R() * gravity_*delta_t_ - vi) - beta;
         r.block(GAMMA, 0, 3, 1) = (Xi.q_.inverse() * Xj.q_) - gamma;
 
-//        r = Omega_ * r;
+        r = Omega_ * r;
+        return true;
     }
 
     enum : int
