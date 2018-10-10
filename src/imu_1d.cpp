@@ -231,7 +231,7 @@ TEST(Imu1D, 1DRobotSLAM)
     // Add landmark measurements
     for (int l = 0; l < landmarks.size(); l++)
     {
-      double rbar = (landmarks[l] - Robot.x_) + normal(gen)*sqrt(rvar);
+      double rbar = (landmarks[l] - Robot.x_) + normal(gen)*std::sqrt(rvar);
       problem.AddResidualBlock(new Range1dFactorVelocity(rbar, rvar), NULL, lhat.data()+l, xhat.data()+2*win);
     }
   }

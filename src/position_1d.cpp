@@ -90,14 +90,14 @@ TEST(Position1D, SLAM)
   {
     if (i > 0)
     {
-      double That = (x(i) - x(i-1)) + normal(gen)*sqrt(evar);
+      double That = (x(i) - x(i-1)) + normal(gen)*std::sqrt(evar);
       xhat(i) = xhat(i-1) + That;
       problem.AddResidualBlock(new Transform1d(That, evar), NULL, xhat.data() + i-1, xhat.data() + i);
     }
 
     for (int j = 0; j < l.rows(); j++)
     {
-      double zbar = (l[j] - x[i]) + normal(gen)*sqrt(rvar);
+      double zbar = (l[j] - x[i]) + normal(gen)*std::sqrt(rvar);
       problem.AddResidualBlock(new Range1dFactor(zbar, rvar), NULL, lhat.data()+j, xhat.data() + i);
     }
 
