@@ -16,6 +16,13 @@ include_directories(include
 add_subdirectory(lib/geometry)
 add_subdirectory(lib/multirotor_sim)
 
+add_library(utils
+    include/utils/jac.cpp
+    include/utils/robot1d.cpp)
+
+add_library(factors
+    include/factors/imu_3d.cpp)
+
 add_executable(ceres_tests
     src/position_1d.cpp
     src/position_3d.cpp
@@ -26,6 +33,8 @@ add_executable(ceres_tests
     src/time_offset.cpp
 )
 target_link_libraries(ceres_tests
+    factors
+    utils
     geometry
     multirotor_sim
     gtest
