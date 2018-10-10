@@ -149,8 +149,9 @@ TEST(Imu3D, CheckBiasJacobians)
     };
     JFD = calc_jac(fun, b0, nullptr, nullptr, boxminus, nullptr);
 
-    cout << "J:\n" << J << "\n\n";
-    cout << "JFD:\n" << JFD << "\n\n";
+//    cout << "J:\n" << J << "\n\n";
+//    cout << "JFD:\n" << JFD << "\n\n";
+    EXPECT_LE((J-JFD).array().square().sum(), 1e-3);
 }
 
 TEST(Imu3D, SingleWindow)
@@ -214,17 +215,20 @@ TEST(Imu3D, SingleWindow)
     Solver::Options options;
     options.max_num_iterations = 25;
     options.linear_solver_type = ceres::DENSE_QR;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = false;
     Solver::Summary summary;
 
-    cout << "xhat0\n" << xhat.transpose() << endl;
-    cout << "bhat0\n" << bhat.transpose() << endl;
+//    cout << "xhat0\n" << xhat.transpose() << endl;
+//    cout << "bhat0\n" << bhat.transpose() << endl;
 
     ceres::Solve(options, &problem, &summary);
-    summary.FullReport();
+    double error = (b - bhat).norm();
 
-    cout << "x\n" << x.transpose() << endl;
-    cout << "xhat0\n" << xhat.transpose() << endl;
-    cout << "b\n" << b.transpose() << endl;
-    cout << "bhat\n" << bhat.transpose() << endl;
+//    summary.FullReport();
+//    cout << "x\n" << x.transpose() << endl;
+//    cout << "xhat0\n" << xhat.transpose() << endl;
+//    cout << "b\n" << b.transpose() << endl;
+//    cout << "bhat\n" << bhat.transpose() << endl;
+//    cout << "e " << error << endl;
+    EXPECT_LE(error, 0.1);
 }
