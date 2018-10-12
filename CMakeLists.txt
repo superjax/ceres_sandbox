@@ -21,7 +21,7 @@ add_library(utils
     include/utils/robot1d.cpp)
 
 add_library(factors
-    include/factors/imu_3d.cpp)
+    include/factors/imu3d.cpp)
 
 add_executable(ceres_tests
     src/position_1d.cpp

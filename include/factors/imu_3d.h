@@ -11,18 +11,12 @@ class Imu3DFactorCostFunction
 {
 public:
     Imu3DFactorCostFunction(double _t0, const Vector6d& bhat, const Matrix6d& cov);
-
     void dynamics(const Vector10d& y, const Vector6d& u,
                   Vector9d& ydot, Matrix9d& A, Matrix<double, 9, 6>&B, Matrix<double, 9, 6>& C);
-
     void boxplus(const Vector10d& y, const Vector9d& dy, Vector10d& yp);
-
     void boxminus(const Vector10d& y1, const Vector10d& y2, Vector9d& d);
-
     void integrate(double _t, const Vector6d& u);
-
     void estimate_xj(const double* _xi, const double* _vi, double* _xj, double* _vj) const;
-
     void finished();
 
     template<typename T>
@@ -42,18 +36,21 @@ public:
         Vec9 dy = J_ * (b - bhat_);
         Vec10 y;
         y.block(0,0,6,1) = y_.block(0,0,6,1) + dy.block(0,0,6,1);
-        y.block(6,0,4,1) = (Quat<T>::exp(dy.block(6,0,3,1)).inverse() * Quatd(y_.block(6,0,4,1)).inverse()).inverse().elements();
+        y.block(6,0,4,1) = (Quatd(y_.block(6,0,4,1)).otimes2(Quat<T>::exp(dy.block(6,0,3,1)))).elements();
 
         Map<Vec3> alpha(y.data()+ALPHA);
         Map<Vec3> beta(y.data()+BETA);
         Quat<T> gamma(y.data()+GAMMA);
         Map<Matrix<T, 9, 1>> r(residuals);
 
-        r.block(ALPHA, 0, 3, 1) = xi.q_.rotp(xj.t_ - (xi.t_ + vi*delta_t_ + 1/2.0 * gravity_*delta_t_*delta_t_)) -alpha;
-        r.block(BETA, 0, 3, 1) = (vj - vi + xi.q_.rotp(gravity_)*delta_t_) - beta;
+        r.block(ALPHA, 0, 3, 1) = xi.q_.rotp(xj.t_ - xi.t_ - 1/2.0*gravity_*delta_t_*delta_t_) - vi*delta_t_ - alpha;
+        r.block(BETA, 0, 3, 1) = gamma.rota(vj) - vi - xi.q_.rotp(gravity_)*delta_t_ - beta;
         r.block(GAMMA, 0, 3, 1) = (xi.q_.inverse() * xj.q_) - gamma;
 
+        Vec9 rdebug = r;
         r = Omega_ * r;
+        rdebug = r;
+
         return true;
     }
 

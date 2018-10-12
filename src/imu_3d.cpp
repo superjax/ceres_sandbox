@@ -149,8 +149,8 @@ TEST(Imu3D, CheckBiasJacobians)
     };
     JFD = calc_jac(fun, b0, nullptr, nullptr, boxminus, nullptr);
 
-//    cout << "J:\n" << J << "\n\n";
-//    cout << "JFD:\n" << JFD << "\n\n";
+    cout << "J:\n" << J << "\n\n";
+    cout << "JFD:\n" << JFD << "\n\n";
     EXPECT_LE((J-JFD).array().square().sum(), 1e-3);
 }
 
@@ -208,13 +208,13 @@ TEST(Imu3D, SingleWindow)
 
     // Add measurement of final pose
     x.col(1) = multirotor.get_pose().arr_;
-    Matrix6d P = Matrix6d::Identity() * 0.1;
+    Matrix6d P = Matrix6d::Identity() * 1e-8;
     problem.AddResidualBlock(new XformNodeFactorAutoDiff(new XformNodeFactorCostFunction(x.col(1), P)), NULL, xhat.data()+7);
 
 
     Solver::Options options;
     options.max_num_iterations = 25;
-    options.linear_solver_type = ceres::DENSE_QR;
+    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = false;
     Solver::Summary summary;
 
@@ -224,12 +224,21 @@ TEST(Imu3D, SingleWindow)
     ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
-//    summary.FullReport();
+//    cout << summary.FullReport();
 //    cout << "x\n" << x.transpose() << endl;
 //    cout << "xhat0\n" << xhat.transpose() << endl;
 //    cout << "b\n" << b.transpose() << endl;
 //    cout << "bhat\n" << bhat.transpose() << endl;
 //    cout << "e " << error << endl;
+//    Vector9d residual0, residualf;
+//    (*factor)(xhat.data(), xhat.data()+7, vhat.data(), vhat.data()+3, bhat.data(), residual0.data());
+//    (*factor)(xhat.data(), xhat.data()+7, vhat.data(), vhat.data()+3, b.data(), residualf.data());
+
+//    cout << "\nresidual0: " << residual0.transpose() << endl;
+//    cout << "residualf: " << residualf.transpose() << endl;
+//    cout << "\ny: " << factor->y_.transpose() << endl;
+//    cout << "y+dy: " << boxplus(factor->y_, factor->J_ *(bhat - factor->bhat_)).transpose() << endl;
+//    cout << "\nP: \n" << factor->P_ << endl;
     EXPECT_LE(error, 0.1);
 }
 
@@ -238,7 +247,7 @@ TEST(Imu3D, MultiWindow)
     Simulator multirotor(false);
     multirotor.load("../lib/multirotor_sim/params/sim_params.yaml");
 
-    const int N = 10;
+    const int N = 100;
 
     Vector6d b, bhat;
     b.block<3,1>(0,0) = multirotor.get_accel_bias();
@@ -328,23 +337,36 @@ TEST(Imu3D, MultiWindow)
 
     Solver::Options options;
     options.max_num_iterations = 100;
-    options.linear_solver_type = ceres::DENSE_QR;
+    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = true;
     Solver::Summary summary;
 
     cout.flush();
 
-    cout << "xhat0\n" << xhat.transpose() << endl;
-    cout << "bhat0\n" << bhat.transpose() << endl;
+//    cout << "xhat0\n" << xhat.transpose() << endl;
+//    cout << "bhat0\n" << bhat.transpose() << endl;
 
     ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
-    //    summary.FullReport();
+    cout << summary.FullReport();
     cout << "x\n" << x.transpose() << endl;
     cout << "xhat0\n" << xhat.transpose() << endl;
     cout << "b\n" << b.transpose() << endl;
     cout << "bhat\n" << bhat.transpose() << endl;
     cout << "e " << error << endl;
-    EXPECT_LE(error, 0.1);
+    EXPECT_LE(error, 0.15);
+
+//    Eigen::Matrix<double, 9, N> final_residuals;
+
+//    cout << "R\n";
+//    for (int node = 1; node <= N; node++)
+//    {
+//        (*factors[node-1])(xhat.data()+7*(node-1), xhat.data()+7*node,
+//                         vhat.data()+3*(node-1), vhat.data()+3*node,
+//                         bhat.data(),
+//                         final_residuals.data()+9*node);
+//        cout << final_residuals.col(node-1).transpose() << "\n";
+//    }
+//    cout << endl;
 }
