@@ -49,6 +49,7 @@ public:
 class QuatFactor : public ceres::SizedCostFunction<3,4>
 {
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   QuatFactor(double *x)
   {
     quat_.arr_ = Map<Vector4d>(x);

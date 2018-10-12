@@ -2,7 +2,8 @@
 
 #include <ceres/ceres.h>
 #include <Eigen/Core>
-#include <geometry/xform.h>
+
+#include "geometry/xform.h"
 
 using namespace Eigen;
 using namespace xform;
@@ -10,6 +11,7 @@ using namespace xform;
 class Imu3DFactorCostFunction
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Imu3DFactorCostFunction(double _t0, const Vector6d& bhat, const Matrix6d& cov);
     void dynamics(const Vector10d& y, const Vector6d& u,
                   Vector9d& ydot, Matrix9d& A, Matrix<double, 9, 6>&B, Matrix<double, 9, 6>& C);

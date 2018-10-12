@@ -1,7 +1,7 @@
 #include <Eigen/Core>
-#include "jac.h"
+#include "utils/jac.h"
 
-Eigen::MatrixXd calc_jac(std::function<Eigen::MatrixXd(Eigen::MatrixXd)> fun, Eigen::MatrixXd x,
+Eigen::MatrixXd calc_jac(std::function<Eigen::MatrixXd(const Eigen::MatrixXd&)> fun, const Eigen::MatrixXd& x,
                          std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>f_boxminus,
                          std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>f_boxplus,
                          std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>f_boxminus2,

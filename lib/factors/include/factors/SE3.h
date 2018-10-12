@@ -10,6 +10,7 @@ using namespace xform;
 class XformFactorCostFunction
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     XformFactorCostFunction(double *x)
     {
       xform_ = Xformd(x);
@@ -24,7 +25,7 @@ public:
         return true;
     }
 private:
-    xform::Xform<double> xform_;
+    xform::Xformd xform_;
 };
 typedef ceres::AutoDiffCostFunction<XformFactorCostFunction, 6, 7> XformFactorAutoDiff;
 
@@ -33,10 +34,11 @@ typedef ceres::AutoDiffCostFunction<XformFactorCostFunction, 6, 7> XformFactorAu
 class XformEdgeFactorCostFunction
 {
 public:
-    XformEdgeFactorCostFunction(double *_ebar_ij, double *_P_ij)
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    XformEdgeFactorCostFunction(Vector7d& _ebar_ij, Matrix6d& _P_ij)
     {
-      ebar_ij_ = Xformd(_ebar_ij);
-      Omega_ij_ = Map<const Matrix6d, RowMajor>(_P_ij).inverse();
+      ebar_ij_ = _ebar_ij;
+      Omega_ij_ = _P_ij.inverse();
     }
 
     template<typename T>
@@ -60,7 +62,8 @@ typedef ceres::AutoDiffCostFunction<XformEdgeFactorCostFunction, 6, 7, 7> XformE
 class XformNodeFactorCostFunction
 {
 public:
-    XformNodeFactorCostFunction(const Vector7d _xbar, const Matrix6d _P)
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
+    XformNodeFactorCostFunction(const Vector7d& _xbar, const Matrix6d& _P)
     {
       xbar_ = Xformd(_xbar);
       Omega_ = _P.inverse();

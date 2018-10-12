@@ -76,12 +76,11 @@ TEST(Pose3D, GraphSLAM)
   Matrix6d sqrtlccov (lccov.llt().matrixL());
 
   // Simulate the robot while building up the graph
-  int num_steps = 50;
+  const int num_steps = 50;
   int num_lc = 12;
 
   // Raw buffer to hold estimates and truth
-  double _x[num_steps][7];
-  double _xhat[num_steps][7];
+  Eigen::Matrix<double, 7, num_steps> x, xhat;
 
   std::default_random_engine gen;
   std::normal_distribution<double> normal(0.0,1.0);
@@ -109,16 +108,12 @@ TEST(Pose3D, GraphSLAM)
     if (k == 0)
     {
       // Starting position
-      Map<Vector7d> x0(_x[0]);
-      x0 = Xform<double>::Identity().elements();
-
-      // Starting Estimate
-      Map<Vector7d> x0hat(_xhat[0]);
-      x0hat = Xform<double>::Identity().elements();
+      xhat.col(0) = Xform<double>::Identity().elements();
+      x.col(0) = Xform<double>::Identity().elements();
 
       // Start by pinning the initial pose to the origin
-      problem.AddParameterBlock(_xhat[0], 7, new XformAutoDiffParameterization()); // Tell ceres that this is a Lie Group
-      problem.SetParameterBlockConstant(_xhat[0]);
+      problem.AddParameterBlock(xhat.data(), 7, new XformAutoDiffParameterization()); // Tell ceres that this is a Lie Group
+      problem.SetParameterBlockConstant(xhat.data());
     }
     else
     {
@@ -126,10 +121,10 @@ TEST(Pose3D, GraphSLAM)
       int j = k;
 
       // Move forward
-      Xform<double> xi(_x[i]);
-      Xform<double> xihat (_xhat[i]);
-      Map<Vector7d> xj(_x[j]);
-      Map<Vector7d> xjhat(_xhat[j]);
+      Xform<double> xi(x.data()+7*i);
+      Xform<double> xihat (xhat.data() + 7*i);
+      Map<Vector7d> xj(x.data()+7*j);
+      Map<Vector7d> xjhat(xhat.data()+7*j);
       xj = (xi + u).elements();
 
       // Create measurement (with noise)
@@ -143,8 +138,8 @@ TEST(Pose3D, GraphSLAM)
       xjhat = (xihat * Xform<double>(ehat_ij)).elements();
 
       // Add odometry edges to graph
-      problem.AddParameterBlock(_xhat[j], 7, new XformAutoDiffParameterization()); // Tell ceres that this is a lie group
-      problem.AddResidualBlock(new XformEdgeFactorAutoDiff(new XformEdgeFactorCostFunction(ehat_ij.data(), odomcov.data())), NULL, _xhat[i], _xhat[j]);
+      problem.AddParameterBlock(xhat.data() + 7*j, 7, new XformAutoDiffParameterization()); // Tell ceres that this is a lie group
+      problem.AddResidualBlock(new XformEdgeFactorAutoDiff(new XformEdgeFactorCostFunction(ehat_ij, odomcov)), NULL, xhat.data()+7*i, xhat.data()+7*j);
     }
   }
 
@@ -154,8 +149,8 @@ TEST(Pose3D, GraphSLAM)
     int i = loop_closures[l][0];
     int j = loop_closures[l][1];
 
-    Xform<double> xi(_x[i]);
-    Xform<double> xj(_x[j]);
+    Xform<double> xi(x.data()+7*i);
+    Xform<double> xj(x.data()+7*j);
     Xform<double> eij = xi.inverse() * (xj); // true transform
 
     // Create measurement (with noise)
@@ -168,7 +163,7 @@ TEST(Pose3D, GraphSLAM)
     Vector7d ehat_ij = eij.elements();
 
     // Add loop closure edge to graph
-    problem.AddResidualBlock(new XformEdgeFactorAutoDiff(new XformEdgeFactorCostFunction(ehat_ij.data(), lccov.data())), NULL, _xhat[i], _xhat[j]);
+    problem.AddResidualBlock(new XformEdgeFactorAutoDiff(new XformEdgeFactorCostFunction(ehat_ij, lccov)), NULL, xhat.data()+7*i, xhat.data()+7*j);
   }
 
 
@@ -184,20 +179,20 @@ TEST(Pose3D, GraphSLAM)
   log_file << "x:\n";
   for (int i = 0; i < num_steps; i++)
   {
-    log_file <<"[" << i << "] - " << Xform<double>(_x[i]) << "\n";
+    log_file <<"[" << i << "] - " << Xformd(x.col(i)) << "\n";
   }
 
   log_file << "xhat0:\n";
   for (int i = 0; i < num_steps; i++)
   {
-    log_file << "[" << i << "] - " << Xform<double>(_xhat[i]) << "\t--\t" << 1/6.0 * (Xformd(_xhat[i]) - Xformd(_x[i])).array().square().sum() << "\n";
+    log_file << "[" << i << "] - " << Xformd(xhat.col(i)) << "\t--\t" << 1/6.0 * (Xformd(xhat.col(i)) - Xformd(x.col(i))).array().square().sum() << "\n";
   }
 
   // Calculate RMSE
   double RMSE = 0;
   for (int k = 0; k < num_steps; k++)
   {
-    RMSE += 1/6.0 * (Xformd(_xhat[k]) - Xformd(_x[k])).array().square().sum();
+    RMSE += 1/6.0 * (Xformd(xhat.col(k)) - Xformd(x.col(k))).array().square().sum();
   }
   RMSE /= num_steps;
   log_file << "RMSE0: " << RMSE << endl;
@@ -207,13 +202,13 @@ TEST(Pose3D, GraphSLAM)
   log_file << "xhat:\n:";
   for (int i = 0; i < num_steps; i++)
   {
-    log_file << "[" << i << "] - " << Xform<double>(_xhat[i]) << "\t--\t" << 1/6.0 * (Xformd(_xhat[i]) - Xformd(_x[i])).array().square().sum() << "\n";
+    log_file << "[" << i << "] - " << Xform<double>(xhat.col(i)) << "\t--\t" << 1/6.0 * (Xformd(xhat.col(i)) - Xformd(x.col(i))).array().square().sum() << "\n";
   }
   // Calculate RMSE
   RMSE = 0;
   for (int k = 0; k < num_steps; k++)
   {
-    RMSE += 1/6.0 * (Xformd(_xhat[k]) - Xformd(_x[k])).array().square().sum();
+    RMSE += 1/6.0 * (Xformd(xhat.col(k)) - Xformd(x.col(k))).array().square().sum();
   }
   RMSE /= num_steps;
   log_file << "RMSEf: " << RMSE << endl;

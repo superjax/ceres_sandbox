@@ -5,7 +5,7 @@
 
 #include <Eigen/Core>
 
-#include "robot1d.h"
+#include "utils/robot1d.h"
 
 using namespace Eigen;
 

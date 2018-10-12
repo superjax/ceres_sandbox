@@ -1,13 +1,14 @@
 #include <random>
 
+#include <ceres/ceres.h>
+#include <gtest/gtest.h>
+#include <Eigen/Dense>
+
 #include "factors/position_1d.h"
 #include "factors/position_3d.h"
 #include "factors/range_1d.h"
 #include "factors/transform_1d.h"
-#include <ceres/ceres.h>
 
-#include "gtest/gtest.h"
-#include "Eigen/Dense"
 
 using namespace ceres;
 using namespace Eigen;

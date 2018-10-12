@@ -7,6 +7,7 @@
 class Position3dFactor : public ceres::SizedCostFunction<3,3>
 {
  public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Position3dFactor(double *x)
   {
       position_[0] = x[0];

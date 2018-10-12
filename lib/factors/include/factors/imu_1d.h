@@ -8,6 +8,7 @@ using namespace Eigen;
 class Pose1DConstraint : public ceres::SizedCostFunction<2,2>
 {
 public:
+  EIGEN_MAKE_ALIGNED_OPERATOR_NEW
   Pose1DConstraint(Vector2d z, Matrix2d cov)
   {
     z_ = z;
@@ -40,6 +41,7 @@ protected:
 class Imu1DFactorCostFunction
 {
 public:
+    EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     Imu1DFactorCostFunction(double _t0, double _bi_hat, double avar)
     {
       t0_ = _t0;

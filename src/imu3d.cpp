@@ -11,7 +11,7 @@
 
 #include "geometry/xform.h"
 #include "geometry/support.h"
-#include "simulator.h"
+#include "multirotor_sim/simulator.h"
 #include "utils/jac.h"
 
 using namespace ceres;
@@ -59,7 +59,7 @@ TEST(Imu3D, CheckDynamicsJacobians)
         Imu3DFactorCostFunction f(0, b0, cov);
         f.dynamics(y0, u0, ydot, A, B, C);
 
-        auto yfun = [cov, b0, u0](Vector10d y)
+        auto yfun = [&cov, &b0, &u0](const Vector10d& y)
         {
             Imu3DFactorCostFunction f(0, b0, cov);
             Vector9d ydot;
@@ -69,7 +69,7 @@ TEST(Imu3D, CheckDynamicsJacobians)
             f.dynamics(y, u0, ydot, A, B, C);
             return ydot;
         };
-        auto bfun = [cov, y0, u0](Vector6d b)
+        auto bfun = [&cov, &y0, &u0](const Vector6d& b)
         {
             Imu3DFactorCostFunction f(0, b, cov);
             Vector9d ydot;
@@ -79,7 +79,7 @@ TEST(Imu3D, CheckDynamicsJacobians)
             f.dynamics(y0, u0, ydot, A, B, C);
             return ydot;
         };
-        auto ufun = [cov, b0, y0](Vector6d u)
+        auto ufun = [&cov, &b0, &y0](const Vector6d& u)
         {
             Imu3DFactorCostFunction f(0, b0, cov);
             Vector9d ydot;
@@ -138,7 +138,7 @@ TEST(Imu3D, CheckBiasJacobians)
     }
     J = f.J_;
 
-    auto fun = [cov, meas, t, y0](Vector6d b0)
+    auto fun = [&cov, &meas, &t, &y0](const Vector6d& b0)
     {
         Imu3DFactorCostFunction f(0, b0, cov);
         for (int i = 0; i < meas.size(); i++)
@@ -149,8 +149,8 @@ TEST(Imu3D, CheckBiasJacobians)
     };
     JFD = calc_jac(fun, b0, nullptr, nullptr, boxminus, nullptr);
 
-    cout << "J:\n" << J << "\n\n";
-    cout << "JFD:\n" << JFD << "\n\n";
+//    cout << "J:\n" << J << "\n\n";
+//    cout << "JFD:\n" << JFD << "\n\n";
     EXPECT_LE((J-JFD).array().square().sum(), 1e-3);
 }
 
@@ -349,12 +349,12 @@ TEST(Imu3D, MultiWindow)
     ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
-    cout << summary.FullReport();
-    cout << "x\n" << x.transpose() << endl;
-    cout << "xhat0\n" << xhat.transpose() << endl;
-    cout << "b\n" << b.transpose() << endl;
-    cout << "bhat\n" << bhat.transpose() << endl;
-    cout << "e " << error << endl;
+//    cout << summary.FullReport();
+//    cout << "x\n" << x.transpose() << endl;
+//    cout << "xhat0\n" << xhat.transpose() << endl;
+//    cout << "b\n" << b.transpose() << endl;
+//    cout << "bhat\n" << bhat.transpose() << endl;
+//    cout << "e " << error << endl;
     EXPECT_LE(error, 0.15);
 
 //    Eigen::Matrix<double, 9, N> final_residuals;

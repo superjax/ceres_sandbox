@@ -1,10 +1,11 @@
-#include "quat.h"
 #include <ceres/ceres.h>
+#include <Eigen/Dense>
+#include <gtest/gtest.h>
+
 #include "factors/attitude_3d.h"
 #include "utils/jac.h"
+#include "geometry/quat.h"
 
-#include "gtest/gtest.h"
-#include "Eigen/Dense"
 
 #define NUM_ITERS 10
 
