@@ -17,7 +17,7 @@ public:
                   Vector9d& ydot, Matrix9d& A, Matrix<double, 9, 6>&B, Matrix<double, 9, 6>& C);
     void boxplus(const Vector10d& y, const Vector9d& dy, Vector10d& yp);
     void boxminus(const Vector10d& y1, const Vector10d& y2, Vector9d& d);
-    void integrate(double _t, const Vector6d& u);
+    void integrate(double _t, const Vector6d& u, bool record=true);
     void estimate_xj(const double* _xi, const double* _vi, double* _xj, double* _vj) const;
     void finished();
 
@@ -49,9 +49,7 @@ public:
         r.block(BETA, 0, 3, 1) = gamma.rota(vj) - vi - xi.q_.rotp(gravity_)*delta_t_ - beta;
         r.block(GAMMA, 0, 3, 1) = (xi.q_.inverse() * xj.q_) - gamma;
 
-        Vec9 rdebug = r;
         r = Omega_ * r;
-        rdebug = r;
 
         return true;
     }
@@ -87,6 +85,8 @@ public:
     Matrix6d imu_cov_;
     Matrix<double, 9, 6> J_;
     Vector3d gravity_ = (Vector3d() << 0, 0, 9.80665).finished();
+    std::vector<Vector6d, aligned_allocator<Vector6d>> imu_hist_;
+    std::vector<double> t_hist_;
 };
 
 typedef ceres::AutoDiffCostFunction<Imu3DFactorCostFunction, 9, 7, 7, 3, 3, 6> Imu3DFactorAutoDiff;

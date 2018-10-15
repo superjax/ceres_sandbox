@@ -65,10 +65,16 @@ void Imu3DFactorCostFunction::boxminus(const Vector10d& y1, const Vector10d& y2,
     d.segment<3>(Q) = Quatd(y1.segment<4>(Q)) - Quatd(y2.segment<4>(Q));
 }
 
-void Imu3DFactorCostFunction::integrate(double _t, const Vector6d& u)
+void Imu3DFactorCostFunction::integrate(double _t, const Vector6d& u, bool record)
 {
     double dt = _t - (t0_ + delta_t_);
     delta_t_ = _t - t0_;
+
+    if (record)
+    {
+        imu_hist_.push_back(u);
+        t_hist_.push_back(_t);
+    }
 
     Vector9d ydot;
     Matrix9d A;

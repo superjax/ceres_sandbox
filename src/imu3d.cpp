@@ -247,7 +247,7 @@ TEST(Imu3D, MultiWindow)
     Simulator multirotor(false);
     multirotor.load("../lib/multirotor_sim/params/sim_params.yaml");
 
-    const int N = 100;
+    const int N = 1000;
 
     Vector6d b, bhat;
     b.block<3,1>(0,0) = multirotor.get_accel_bias();
@@ -283,8 +283,11 @@ TEST(Imu3D, MultiWindow)
     // Integrate for N frames
     int node = 0;
     Imu3DFactorCostFunction* factor = factors[node];
+    std::vector<double> t;
+    t.push_back(multirotor.t_);
     while (node < N)
     {
+        t.push_back(multirotor.t_);
         multirotor.run();
         factor->integrate(multirotor.t_, multirotor.get_imu_prev());
         multirotor.get_measurements(meas_list);
@@ -340,33 +343,49 @@ TEST(Imu3D, MultiWindow)
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = true;
     Solver::Summary summary;
+    ofstream truth_file("Imu3d.MultiWindow.truth.log", ios::out);
+    ofstream est_file("Imu3d.MultiWindow.est.log", ios::out);
 
     cout.flush();
 
 //    cout << "xhat0\n" << xhat.transpose() << endl;
 //    cout << "bhat0\n" << bhat.transpose() << endl;
 
-    ceres::Solve(options, &problem, &summary);
+//    ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
-//    cout << summary.FullReport();
-//    cout << "x\n" << x.transpose() << endl;
-//    cout << "xhat0\n" << xhat.transpose() << endl;
-//    cout << "b\n" << b.transpose() << endl;
-//    cout << "bhat\n" << bhat.transpose() << endl;
-//    cout << "e " << error << endl;
-    EXPECT_LE(error, 0.15);
+    cout << summary.FullReport();
+    cout << "x\n" << x.transpose() << endl;
+    cout << "xhat0\n" << xhat.transpose() << endl;
+    cout << "b\n" << b.transpose() << endl;
+    cout << "bhat\n" << bhat.transpose() << endl;
+    cout << "e " << error << endl;
+    EXPECT_LE(error, 0.10);
 
-//    Eigen::Matrix<double, 9, N> final_residuals;
+    Eigen::Matrix<double, 9, N> final_residuals;
 
-//    cout << "R\n";
-//    for (int node = 1; node <= N; node++)
-//    {
-//        (*factors[node-1])(xhat.data()+7*(node-1), xhat.data()+7*node,
-//                         vhat.data()+3*(node-1), vhat.data()+3*node,
-//                         bhat.data(),
-//                         final_residuals.data()+9*node);
-//        cout << final_residuals.col(node-1).transpose() << "\n";
-//    }
-//    cout << endl;
+    cout << "R\n";
+    for (int node = 1; node <= N; node++)
+    {
+        (*factors[node-1])(xhat.data()+7*(node-1), xhat.data()+7*node,
+                         vhat.data()+3*(node-1), vhat.data()+3*node,
+                         bhat.data(),
+                         final_residuals.data()+9*node);
+        cout << final_residuals.col(node-1).transpose() << "\n";
+
+    }
+    cout << endl;
+
+
+    for (int i = 0; i <= N; i++)
+    {
+        truth_file.write((char*)&t[i],sizeof(double));
+        truth_file.write((char*)(x.data()+7*i),sizeof(double)*7);
+        truth_file.write((char*)(v.data()+3*i),sizeof(double)*3);
+        est_file.write((char*)&t[i],sizeof(double));
+        est_file.write((char*)(xhat.data()+7*i),sizeof(double)*7);
+        est_file.write((char*)(vhat.data()+3*i),sizeof(double)*3);
+    }
+    truth_file.close();
+    est_file.close();
 }
