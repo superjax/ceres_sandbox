@@ -102,8 +102,8 @@ void Imu3DFactorCostFunction::estimate_xj(const double* _xi, const double* _vi, 
     Map<const Vector3d> vi(_vi);
     Map<Vector3d> vj(_vj);
 
-    xj.t_ = xi.t_ + vi*delta_t_ + 1/2.0 * gravity_*delta_t_*delta_t_ + xi.q_.rota(alpha);
-    vj = vi + xi.q_.rotp(gravity_)*delta_t_ + beta;
+    xj.t_ = xi.t_ + vi*delta_t_ + 1/2.0 * gravity_*delta_t_*delta_t_ + xi.q_.rotp(alpha);
+    vj = gamma.rotp(vi + xi.q_.rotp(gravity_)*delta_t_ + beta);
     xj.q_ = xi.q_ * gamma;
 }
 

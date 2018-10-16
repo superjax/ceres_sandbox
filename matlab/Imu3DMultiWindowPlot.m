@@ -3,11 +3,16 @@ set(0,'DefaultFigureWindowStyle','docked')
 
 truth_file = fopen('../build/Imu3d.MultiWindow.truth.log', 'r');
 est_file = fopen('../build/Imu3d.MultiWindow.est.log', 'r');
+est0_file = fopen('../build/Imu3d.MultiWindow.est0.log', 'r');
 
 truth = fread(truth_file, 'double');
-est = fread(est_file, 'double');
 truth = reshape(truth, 11, []);
+
+est = fread(est_file, 'double');
 est = reshape(est, 11, []);
+
+est0 = fread(est0_file, 'double');
+est0 = reshape(est0, 11, []);
 
 names = ["t", "px", "py", "pz", "qw", "qx", "qy", "qz", "vx", "vy", "vz"];
 
@@ -20,9 +25,10 @@ for i = 1:3
     subplot(3,1,i);
     plot(truth(1,:), truth(idx,:));
     hold on;
+    plot(est0(1,:), est0(idx,:));
     plot(est(1,:), est(idx,:));
     title(names(idx));
-    legend("truth", "est")
+    legend("truth", "est0", "estf")
 end
 
 %% Plot attitude
@@ -33,9 +39,10 @@ for i = 1:4
     subplot(4,1,i);
     plot(truth(1,:), truth(idx,:));
     hold on;
+    plot(est0(1,:), est0(idx,:));
     plot(est(1,:), est(idx,:));
     title(names(idx));
-    legend("truth", "est")
+    legend("truth", "est0", "estf")
 end
 
 
@@ -47,7 +54,8 @@ for i = 1:3
     subplot(3,1,i);
     plot(truth(1,:), truth(idx,:));
     hold on;
+    plot(est0(1,:), est0(idx,:));
     plot(est(1,:), est(idx,:));
     title(names(idx));
-    legend("truth", "est")
+    legend("truth", "est0", "est")
 end

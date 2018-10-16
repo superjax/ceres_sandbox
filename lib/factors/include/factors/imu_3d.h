@@ -45,9 +45,10 @@ public:
         Quat<T> gamma(y.data()+GAMMA);
         Map<Matrix<T, 9, 1>> r(residuals);
 
-        r.block(ALPHA, 0, 3, 1) = xi.q_.rotp(xj.t_ - xi.t_ - 1/2.0*gravity_*delta_t_*delta_t_) - vi*delta_t_ - alpha;
-        r.block(BETA, 0, 3, 1) = gamma.rota(vj) - vi - xi.q_.rotp(gravity_)*delta_t_ - beta;
-        r.block(GAMMA, 0, 3, 1) = (xi.q_.inverse() * xj.q_) - gamma;
+//        r.block(ALPHA, 0, 3, 1) = xi.q_.rota(xj.t_ - xi.t_ - 1/2.0*gravity_*delta_t_*delta_t_) - vi*delta_t_ - alpha;
+        r.template block<6,1>(0,0).setZero();
+//        r.template block<3,1>(BETA, 0) = gamma.rotp(vj) - vi - xi.q_.rota(gravity_)*delta_t_ - beta;
+        r.template block<3,1>(GAMMA, 0) = (xi.q_.inverse() * xj.q_) - gamma;
 
         r = Omega_ * r;
 

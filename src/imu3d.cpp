@@ -345,13 +345,21 @@ TEST(Imu3D, MultiWindow)
     Solver::Summary summary;
     ofstream truth_file("Imu3d.MultiWindow.truth.log", ios::out);
     ofstream est_file("Imu3d.MultiWindow.est.log", ios::out);
+    ofstream est0_file("Imu3d.MultiWindow.est0.log", ios::out);
+
+    for (int i = 0; i <= N; i++)
+    {
+        est0_file.write((char*)&t[i],sizeof(double));
+        est0_file.write((char*)(xhat.data()+7*i),sizeof(double)*7);
+        est0_file.write((char*)(vhat.data()+3*i),sizeof(double)*3);
+    }
 
     cout.flush();
 
 //    cout << "xhat0\n" << xhat.transpose() << endl;
 //    cout << "bhat0\n" << bhat.transpose() << endl;
 
-//    ceres::Solve(options, &problem, &summary);
+    ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
     cout << summary.FullReport();
