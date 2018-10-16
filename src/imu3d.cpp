@@ -111,7 +111,7 @@ TEST(Imu3D, CheckDynamicsJacobians)
 TEST(Imu3D, CheckBiasJacobians)
 {
     Simulator multirotor(false);
-    multirotor.load("../lib/multirotor_sim/params/sim_params.yaml");
+    multirotor.load("../params/sim_params.yaml");
     std::vector<Vector6d,Eigen::aligned_allocator<Vector6d>> meas;
     std::vector<double> t;
 
@@ -157,7 +157,7 @@ TEST(Imu3D, CheckBiasJacobians)
 TEST(Imu3D, SingleWindow)
 {
     Simulator multirotor(false);
-    multirotor.load("../lib/multirotor_sim/params/sim_params.yaml");
+    multirotor.load("../params/sim_params.yaml");
 
     Vector6d b, bhat;
     b.block<3,1>(0,0) = multirotor.get_accel_bias();
@@ -245,9 +245,13 @@ TEST(Imu3D, SingleWindow)
 TEST(Imu3D, MultiWindow)
 {
     Simulator multirotor(false);
-    multirotor.load("../lib/multirotor_sim/params/sim_params.yaml");
+    multirotor.load("../params/sim_params.yaml");
 
+#if defined (NDEBUG)
     const int N = 1000;
+#else
+    const int N = 10;
+#endif
 
     Vector6d b, bhat;
     b.block<3,1>(0,0) = multirotor.get_accel_bias();
@@ -257,8 +261,12 @@ TEST(Imu3D, MultiWindow)
 
     Problem problem;
 
-    Eigen::Matrix<double, 7, N+1> xhat, x;
-    Eigen::Matrix<double, 3, N+1> vhat, v;
+    Eigen::MatrixXd xhat, x;
+    Eigen::MatrixXd vhat, v;
+    xhat.resize(7, N+1);
+    x.resize(7, N+1);
+    vhat.resize(3, N+1);
+    v.resize(3, N+1);
 
     xhat.col(0) = multirotor.get_pose().arr_;
     vhat.col(0) = multirotor.dyn_.get_state().segment<3>(dynamics::VX);
@@ -287,7 +295,6 @@ TEST(Imu3D, MultiWindow)
     t.push_back(multirotor.t_);
     while (node < N)
     {
-        t.push_back(multirotor.t_);
         multirotor.run();
         factor->integrate(multirotor.t_, multirotor.get_imu_prev());
         multirotor.get_measurements(meas_list);
@@ -307,6 +314,7 @@ TEST(Imu3D, MultiWindow)
 
         if (new_node)
         {
+            t.push_back(multirotor.t_);
             node += 1;
 
             // estimate next node pose and velocity with IMU preintegration
@@ -328,20 +336,17 @@ TEST(Imu3D, MultiWindow)
             // Start a new Factor
             factors.push_back(new Imu3DFactorCostFunction(multirotor.t_, bhat, multirotor.get_imu_noise_covariance()));
             factor = factors[node];
+
+            Matrix6d P = Matrix6d::Identity() * 0.001;
+            problem.AddResidualBlock(new XformNodeFactorAutoDiff(new XformNodeFactorCostFunction(x.col(node), P)), NULL, xhat.data()+7*node);
         }
     }
 
-
-
-
-    Matrix6d P = Matrix6d::Identity() * 0.1;
-    problem.AddResidualBlock(new XformNodeFactorAutoDiff(new XformNodeFactorCostFunction(x.col(1), P)), NULL, xhat.data()+7);
-
-
     Solver::Options options;
     options.max_num_iterations = 100;
+    options.num_threads = 6;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = false;
     Solver::Summary summary;
     ofstream truth_file("Imu3d.MultiWindow.truth.log", ios::out);
     ofstream est_file("Imu3d.MultiWindow.est.log", ios::out);
@@ -362,27 +367,27 @@ TEST(Imu3D, MultiWindow)
     ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
-    cout << summary.FullReport();
-    cout << "x\n" << x.transpose() << endl;
-    cout << "xhat0\n" << xhat.transpose() << endl;
-    cout << "b\n" << b.transpose() << endl;
-    cout << "bhat\n" << bhat.transpose() << endl;
-    cout << "e " << error << endl;
-    EXPECT_LE(error, 0.10);
+//    cout << summary.FullReport();
+//    cout << "x\n" << x.transpose() << endl;
+//    cout << "xhat0\n" << xhat.transpose() << endl;
+//    cout << "b\n" << b.transpose() << endl;
+//    cout << "bhat\n" << bhat.transpose() << endl;
+//    cout << "e " << error << endl;
+    EXPECT_LE(error, 0.01);
 
-    Eigen::Matrix<double, 9, N> final_residuals;
+//    Eigen::Matrix<double, 9, N> final_residuals;
 
-    cout << "R\n";
-    for (int node = 1; node <= N; node++)
-    {
-        (*factors[node-1])(xhat.data()+7*(node-1), xhat.data()+7*node,
-                         vhat.data()+3*(node-1), vhat.data()+3*node,
-                         bhat.data(),
-                         final_residuals.data()+9*node);
-        cout << final_residuals.col(node-1).transpose() << "\n";
+//    cout << "R\n";
+//    for (int node = 1; node <= N; node++)
+//    {
+//        (*factors[node-1])(xhat.data()+7*(node-1), xhat.data()+7*node,
+//                         vhat.data()+3*(node-1), vhat.data()+3*node,
+//                         bhat.data(),
+//                         final_residuals.data()+9*node);
+//        cout << final_residuals.col(node-1).transpose() << "\n";
 
-    }
-    cout << endl;
+//    }
+//    cout << endl;
 
 
     for (int i = 0; i <= N; i++)

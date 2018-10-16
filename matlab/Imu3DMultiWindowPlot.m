@@ -23,7 +23,7 @@ set(gcf, 'name', 'Position', 'NumberTitle', 'off');
 for i = 1:3
     idx = i+1;
     subplot(3,1,i);
-    plot(truth(1,:), truth(idx,:));
+    plot(truth(1,:), truth(idx,:), 'lineWidth', 1.2);
     hold on;
     plot(est0(1,:), est0(idx,:));
     plot(est(1,:), est(idx,:));
@@ -37,7 +37,7 @@ set(gcf, 'name', 'Attitude', 'NumberTitle', 'off');
 for i = 1:4
     idx = i+4;
     subplot(4,1,i);
-    plot(truth(1,:), truth(idx,:));
+    plot(truth(1,:), truth(idx,:), 'lineWidth', 1.2);
     hold on;
     plot(est0(1,:), est0(idx,:));
     plot(est(1,:), est(idx,:));
@@ -52,7 +52,7 @@ set(gcf, 'name', 'Velocity', 'NumberTitle', 'off');
 for i = 1:3
     idx = i+8;
     subplot(3,1,i);
-    plot(truth(1,:), truth(idx,:));
+    plot(truth(1,:), truth(idx,:), 'lineWidth', 1.2);
     hold on;
     plot(est0(1,:), est0(idx,:));
     plot(est(1,:), est(idx,:));
