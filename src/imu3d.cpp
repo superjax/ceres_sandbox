@@ -281,6 +281,7 @@ TEST(Imu3D, MultiWindow)
 
     // Declare the bias parameters
     problem.AddParameterBlock(bhat.data(), 6);
+    problem.SetParameterBlockConstant(bhat.data());
 
     std::vector<Simulator::measurement_t, Eigen::aligned_allocator<Simulator::measurement_t>> meas_list;
     multirotor.get_measurements(meas_list);
@@ -346,7 +347,7 @@ TEST(Imu3D, MultiWindow)
     options.max_num_iterations = 100;
     options.num_threads = 6;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-    options.minimizer_progress_to_stdout = false;
+    options.minimizer_progress_to_stdout = true;
     Solver::Summary summary;
     ofstream truth_file("Imu3d.MultiWindow.truth.log", ios::out);
     ofstream est_file("Imu3d.MultiWindow.est.log", ios::out);
@@ -367,15 +368,15 @@ TEST(Imu3D, MultiWindow)
     ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
-//    cout << summary.FullReport();
+    cout << summary.FullReport();
 //    cout << "x\n" << x.transpose() << endl;
 //    cout << "xhat0\n" << xhat.transpose() << endl;
-//    cout << "b\n" << b.transpose() << endl;
-//    cout << "bhat\n" << bhat.transpose() << endl;
+    cout << "b\n" << b.transpose() << endl;
+    cout << "bhat\n" << bhat.transpose() << endl;
 //    cout << "e " << error << endl;
     EXPECT_LE(error, 0.01);
 
-//    Eigen::Matrix<double, 9, N> final_residuals;
+    Eigen::Matrix<double, 9, N> final_residuals;
 
 //    cout << "R\n";
 //    for (int node = 1; node <= N; node++)

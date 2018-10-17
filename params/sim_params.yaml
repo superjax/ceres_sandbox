@@ -112,6 +112,8 @@ use_gyro_truth: false
 use_camera_truth: false
 use_altimeter_truth: false
 use_depth_truth: false
+use_attitude_truth: false
+use_position_truth: false
 
 RK4: true
 
@@ -159,9 +161,7 @@ depth_update_rate: 30
 depth_noise_stdev: 0.1
 
 ## Truth
-truth_update_rate: 100
-use_attitude_truth: false
-use_position_truth: false
+truth_update_rate: 10
 attitude_noise_stdev: 0.01
 position_noise_stdev: 0.01
 truth_delay: 0

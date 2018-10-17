@@ -38,7 +38,7 @@ public:
         Vec9 dy = J_ * (b - bhat_);
         Vec10 y;
         y.block(0,0,6,1) = y_.block(0,0,6,1) + dy.block(0,0,6,1);
-        y.block(6,0,4,1) = (Quatd(y_.block(6,0,4,1)).otimes2(Quat<T>::exp(dy.block(6,0,3,1)))).elements();
+        y.block(6,0,4,1) = (Quatd(y_.block(6,0,4,1)).otimes<T,T>(Quat<T>::exp(dy.block(6,0,3,1)))).elements();
 
         Map<Vec3> alpha(y.data()+ALPHA);
         Map<Vec3> beta(y.data()+BETA);
