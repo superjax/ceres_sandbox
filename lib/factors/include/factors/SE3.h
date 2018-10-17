@@ -103,9 +103,10 @@ typedef ceres::AutoDiffLocalParameterization<XformPlus, 7, 6> XformAutoDiffParam
 struct XformTimeOffsetCostFunction
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  XformTimeOffsetCostFunction(const Xformd& _x, const Vector6d& _xdot, const Matrix6d& _P)
+  XformTimeOffsetCostFunction(const Vector7d& _x, const Vector6d& _xdot, const Matrix6d& _P)
   {
     Xi_ = _P.inverse().llt().matrixL().transpose();
+//    Xi_ = _P.inverse();
     xdot_ = _xdot;
     x_ = _x;
   }
@@ -116,7 +117,8 @@ struct XformTimeOffsetCostFunction
     typedef Matrix<T,6,1> Vec6;
     Map<Vec6> res(_res);
     Xform<T> x(_x);
-    res = Xi_ * (x - (x_.boxplus<T,T>((*_toff) * xdot_)));
+    res = Xi_ * (x_ - x);
+//    res = Xi_ * (x - (x_.boxplus<T,T>((*_toff) * xdot_)));
     return true;
   }
 private:
@@ -124,4 +126,4 @@ private:
   Vector6d xdot_;
   Matrix6d Xi_;
 };
-typedef ceres::AutoDiffCostFunction<XformTimeOffsetCostFunction, 6, 7, 6> XformTimeOffsetAutoDiff;
+typedef ceres::AutoDiffCostFunction<XformTimeOffsetCostFunction, 6, 7, 1> XformTimeOffsetAutoDiff;

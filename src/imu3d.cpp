@@ -244,6 +244,7 @@ TEST(Imu3D, SingleWindow)
 
 TEST(Imu3D, MultiWindow)
 {
+    google::InitGoogleLogging("Imu3D.MultiWindow");
     Simulator multirotor(false);
     multirotor.load("../params/sim_params.yaml");
 
@@ -281,7 +282,6 @@ TEST(Imu3D, MultiWindow)
 
     // Declare the bias parameters
     problem.AddParameterBlock(bhat.data(), 6);
-    problem.SetParameterBlockConstant(bhat.data());
 
     std::vector<Simulator::measurement_t, Eigen::aligned_allocator<Simulator::measurement_t>> meas_list;
     multirotor.get_measurements(meas_list);
@@ -304,8 +304,8 @@ TEST(Imu3D, MultiWindow)
         {
             switch(it->type)
             {
-            case Simulator::FEAT:
-                // simulate a camera measurement
+            case Simulator::POS:
+                // motion capture measurement
                 new_node = true;
                 break;
             default:
@@ -319,7 +319,8 @@ TEST(Imu3D, MultiWindow)
             node += 1;
 
             // estimate next node pose and velocity with IMU preintegration
-            factor->estimate_xj(xhat.data()+7*(node-1), vhat.data()+3*(node-1), xhat.data()+7*(node), vhat.data()+3*(node));
+            factor->estimate_xj(xhat.data()+7*(node-1), vhat.data()+3*(node-1),
+                                xhat.data()+7*(node), vhat.data()+3*(node));
             // Calculate the Information Matrix of the IMU factor
             factor->finished();
 

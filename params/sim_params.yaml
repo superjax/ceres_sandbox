@@ -7,7 +7,7 @@ random_seed: -1 # -1 initializes seed with time
 #   1 : random waypoints
 #   2 : circular trajectory
 #   3 : constant velocity, randomly varying heading
-path_type: 3
+path_type: 0
 
 # User-defined waypoints
 waypoints: [    
@@ -161,7 +161,7 @@ depth_update_rate: 30
 depth_noise_stdev: 0.1
 
 ## Truth
-truth_update_rate: 10
+truth_update_rate: 5
 attitude_noise_stdev: 0.01
 position_noise_stdev: 0.01
 truth_delay: 0

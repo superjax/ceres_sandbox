@@ -124,13 +124,14 @@ TEST(TimeOffset, 1DRobotSLAM)
 
 TEST(TimeOffset, MultiWindowConstantBias)
 {
+  google::InitGoogleLogging("Imu3D.MultiWindow");
   Simulator multirotor(false);
   multirotor.load("../params/sim_params.yaml");
 
 #if defined (NDEBUG)
   const int N = 1000;
 #else
-  const int N = 10;
+  const int N = 100;
 #endif
 
   Vector6d b, bhat;
@@ -138,6 +139,10 @@ TEST(TimeOffset, MultiWindowConstantBias)
   b.block<3,1>(3,0) = multirotor.get_gyro_bias();
   bhat.setZero();
   bhat = b;
+
+  double dt, dthat;
+  dt = 0.0;
+  dthat = 0.0;
 
   Problem problem;
 
@@ -147,10 +152,6 @@ TEST(TimeOffset, MultiWindowConstantBias)
   x.resize(7, N+1);
   vhat.resize(3, N+1);
   v.resize(3, N+1);
-  double dt = 0.01;
-  double dthat = 0;
-  multirotor.truth_transmission_time_ = dt;
-
 
   xhat.col(0) = multirotor.get_pose().arr_;
   vhat.col(0) = multirotor.dyn_.get_state().segment<3>(dynamics::VX);
@@ -163,9 +164,11 @@ TEST(TimeOffset, MultiWindowConstantBias)
   problem.AddParameterBlock(vhat.data(), 3);
   problem.SetParameterBlockConstant(vhat.data());
 
+  problem.AddParameterBlock(&dthat, 1);
+  problem.SetParameterBlockConstant(&dthat);
+
   // Declare the bias parameters
   problem.AddParameterBlock(bhat.data(), 6);
-//  problem.SetParameterBlockConstant(bhat.data());
 
   std::vector<Simulator::measurement_t, Eigen::aligned_allocator<Simulator::measurement_t>> meas_list;
   multirotor.get_measurements(meas_list);
@@ -173,45 +176,42 @@ TEST(TimeOffset, MultiWindowConstantBias)
   std::vector<Imu3DFactorCostFunction*> factors;
   factors.push_back(new Imu3DFactorCostFunction(0, bhat, multirotor.get_imu_noise_covariance()));
 
-  // Collect Data
+  // Integrate for N frames
   int node = 0;
   Imu3DFactorCostFunction* factor = factors[node];
   std::vector<double> t;
-  std::vector<Xformd, aligned_allocator<Xformd>> truth_meas_buffer_;
-  truth_meas_buffer_.push_back(multirotor.get_pose());
   t.push_back(multirotor.t_);
+  Xformd prev2_pose, prev_pose, current_pose;
+  double prev2_t, prev_t, current_t;
+  Matrix6d pose_cov = Matrix6d::Constant(0);
   while (node < N)
   {
     multirotor.run();
     factor->integrate(multirotor.t_, multirotor.get_imu_prev());
-
-    bool new_node = false;
-    Xformd truth_meas = Xformd::Identity();
-    Matrix6d truth_cov = Matrix6d::Constant(0);
-
     multirotor.get_measurements(meas_list);
+    bool new_node = false;
     for (auto it = meas_list.begin(); it != meas_list.end(); it++)
     {
       switch(it->type)
       {
-      case Simulator::ATT:
-        new_node = true;
-        truth_meas.q_ = it->z;
-        truth_cov.block<3,3>(3,3) = it->R;
-        break;
       case Simulator::POS:
+        pose_cov.block<3,3>(0,0) = it->R;
+        current_pose.t_ = it->z;
         new_node = true;
-        truth_meas.t_ = it->z;
-        truth_cov.block<3,3>(0,0) = it->R;
+        break;
+      case Simulator::ATT:
+        pose_cov.block<3,3>(3,3) = it->R;
+        current_pose.q_ = it->z;
+        new_node = true;
         break;
       default:
         break;
       }
+      current_t = multirotor.t_;
     }
 
     if (new_node)
     {
-      truth_meas_buffer_.push_back(truth_meas);
       t.push_back(multirotor.t_);
       node += 1;
 
@@ -230,26 +230,36 @@ TEST(TimeOffset, MultiWindowConstantBias)
       problem.AddParameterBlock(vhat.data()+3*node, 3);
 
       // Add IMU factor to graph
-//      problem.AddResidualBlock(new Imu3DFactorAutoDiff(factor), NULL, xhat.data()+7*(node-1), xhat.data()+7*node, vhat.data()+3*(node-1), vhat.data()+3*node, bhat.data());
-      problem.AddResidualBlock(new Imu3DFactorAutoDiff(factor), NULL, xhat.data()+7*(node-1), xhat.data()+7*node, vhat.data()+3*(node-1), vhat.data()+3*node);
+      problem.AddResidualBlock(new Imu3DFactorAutoDiff(factor),
+        NULL, xhat.data()+7*(node-1), xhat.data()+7*node, vhat.data()+3*(node-1), vhat.data()+3*node, bhat.data());
 
       // Start a new Factor
       factors.push_back(new Imu3DFactorCostFunction(multirotor.t_, bhat, multirotor.get_imu_noise_covariance()));
       factor = factors[node];
 
-
-      // Motion Capture Measurement of previous node (central differencing to get velocity)
-//      if (node > 1)
+      Matrix6d P = Matrix6d::Identity() * 0.001;
+//      if (node > 1 && node < N-1)
 //      {
-//        Vector6d xdot = (truth_meas_buffer_[node] - truth_meas_buffer_[node - 2])/(t[node] - t[node-2]);
-//        problem.AddResidualBlock(new XformTimeOffsetAutoDiff(
-//                                   new XformTimeOffsetCostFunction(Xformd(xhat.col(node-1)), xdot, truth_cov*1e-3)), NULL, xhat.data(), &dthat);
+        Vector6d current_pose_dot;
+        current_pose_dot.segment<3>(0) = v.col(node);
+        current_pose_dot.segment<3>(3) = multirotor.dyn_.get_state().segment<3>(dynamics::WX);
+        problem.AddResidualBlock(new XformTimeOffsetAutoDiff(
+          new XformTimeOffsetCostFunction(current_pose.elements(), current_pose_dot, pose_cov)), NULL, xhat.data()+7*node, &dthat);
 //      }
+
+//      if (node > 2)
+//      {
+//        Vector6d prev_pose_dot = (current_pose - prev2_pose) / (current_t - prev2_t);
+//        problem.AddResidualBlock(new XformTimeOffsetAutoDiff(
+//          new XformTimeOffsetCostFunction(prev_pose, prev_pose_dot, P)),
+//            NULL, xhat.data()+7*(node-1), &dthat);
+//      }
+//      prev2_pose = prev_pose;
+//      prev_pose = current_pose;
+//      prev2_t = prev_t;
+//      prev_t = current_t;
     }
   }
-  // Truth Pose Measurement
-  Matrix6d P = Matrix6d::Identity() * 0.001;
-  problem.AddResidualBlock(new XformNodeFactorAutoDiff(new XformNodeFactorCostFunction(x.col(node-1), P)), NULL, xhat.data()+7*(node-1));
 
   Solver::Options options;
   options.max_num_iterations = 100;
@@ -275,18 +285,20 @@ TEST(TimeOffset, MultiWindowConstantBias)
 
   ceres::Solve(options, &problem, &summary);
   double error = (b - bhat).norm();
-  cout << "dt: " << dt << endl;
-  cout << "dthat: " << dthat << endl;
 
-      cout << summary.FullReport();
+  cout << summary.FullReport();
   //    cout << "x\n" << x.transpose() << endl;
   //    cout << "xhat0\n" << xhat.transpose() << endl;
-  //    cout << "b\n" << b.transpose() << endl;
-  //    cout << "bhat\n" << bhat.transpose() << endl;
+  cout << "b:     " << b.transpose() << endl;
+  cout << "bhat:  " << bhat.transpose() << endl;
+  cout << "err:   " << (b - bhat).transpose() << endl;
+
+  cout << "dt:    " << dt << endl;
+  cout << "dthat: " << dthat << endl;
   //    cout << "e " << error << endl;
   EXPECT_LE(error, 0.01);
 
-  //    Eigen::Matrix<double, 9, N> final_residuals;
+  Eigen::Matrix<double, 9, N> final_residuals;
 
   //    cout << "R\n";
   //    for (int node = 1; node <= N; node++)
@@ -313,3 +325,4 @@ TEST(TimeOffset, MultiWindowConstantBias)
   truth_file.close();
   est_file.close();
 }
+

@@ -28,12 +28,12 @@ add_library(factors
     lib/factors/src/imu_3d.cpp)
 
 add_executable(ceres_tests
-    src/position1d.cpp
-    src/position3d.cpp
-    src/attitude.cpp
-    src/pose.cpp
-    src/imu1d.cpp
-    src/imu3d.cpp
+#    src/position1d.cpp
+#    src/position3d.cpp
+#    src/attitude.cpp
+#    src/pose.cpp
+#    src/imu1d.cpp
+#    src/imu3d.cpp
     src/time_offset.cpp
 )
 target_link_libraries(ceres_tests
