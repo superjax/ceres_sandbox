@@ -165,7 +165,7 @@ TEST(TimeOffset, MultiWindowConstantBias)
   problem.SetParameterBlockConstant(vhat.data());
 
   problem.AddParameterBlock(&dthat, 1);
-  problem.SetParameterBlockConstant(&dthat);
+//  problem.SetParameterBlockConstant(&dthat);
 
   // Declare the bias parameters
   problem.AddParameterBlock(bhat.data(), 6);

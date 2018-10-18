@@ -117,7 +117,7 @@ struct XformTimeOffsetCostFunction
     typedef Matrix<T,6,1> Vec6;
     Map<Vec6> res(_res);
     Xform<T> x(_x);
-    res = Xi_ * (x_ - x);
+    res = Xi_ * ((x_.boxplus<T,T>((*_toff) * xdot_)) - x);
 //    res = Xi_ * (x - (x_.boxplus<T,T>((*_toff) * xdot_)));
     return true;
   }
