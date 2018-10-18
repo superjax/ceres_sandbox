@@ -141,7 +141,7 @@ TEST(TimeOffset, MultiWindowConstantBias)
   bhat = b;
 
   double dt, dthat;
-  dt = 0.0;
+  dt = 0.010;
   dthat = 0.0;
 
   Problem problem;
