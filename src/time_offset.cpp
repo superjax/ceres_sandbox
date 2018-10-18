@@ -268,7 +268,7 @@ TEST(TimeOffset, MultiWindowConstantBias)
   options.max_num_iterations = 100;
   options.num_threads = 6;
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-  options.minimizer_progress_to_stdout = true;
+  options.minimizer_progress_to_stdout = false;
   Solver::Summary summary;
   ofstream truth_file("TimeOffset.MultiWindowConstantBias.truth.log", ios::out);
   ofstream est_file("TimeOffset.MultiWindowConstantBias.est.log", ios::out);
@@ -281,7 +281,7 @@ TEST(TimeOffset, MultiWindowConstantBias)
     est0_file.write((char*)(vhat.data()+3*i),sizeof(double)*3);
   }
 
-  cout.flush();
+//  cout.flush();
 
   //    cout << "xhat0\n" << xhat.transpose() << endl;
   //    cout << "bhat0\n" << bhat.transpose() << endl;
@@ -289,19 +289,20 @@ TEST(TimeOffset, MultiWindowConstantBias)
   ceres::Solve(options, &problem, &summary);
   double error = (b - bhat).norm();
 
-  cout << summary.FullReport();
+//  cout << summary.FullReport();
   //    cout << "x\n" << x.transpose() << endl;
   //    cout << "xhat0\n" << xhat.transpose() << endl;
-  cout << "b:     " << b.transpose() << endl;
-  cout << "bhat:  " << bhat.transpose() << endl;
-  cout << "err:   " << (b - bhat).transpose() << endl;
+//  cout << "b:     " << b.transpose() << endl;
+//  cout << "bhat:  " << bhat.transpose() << endl;
+//  cout << "err:   " << (b - bhat).transpose() << endl;
 
-  cout << "dt:    " << dt << endl;
-  cout << "dthat: " << dthat << endl;
+//  cout << "dt:    " << dt << endl;
+//  cout << "dthat: " << dthat << endl;
   //    cout << "e " << error << endl;
   EXPECT_LE(error, 0.01);
+  EXPECT_LE(fabs(dt - dthat), 0.01);
 
-  Eigen::Matrix<double, 9, N> final_residuals;
+//  Eigen::Matrix<double, 9, N> final_residuals;
 
   //    cout << "R\n";
   //    for (int node = 1; node <= N; node++)
