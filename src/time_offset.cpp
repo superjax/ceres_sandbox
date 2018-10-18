@@ -144,6 +144,9 @@ TEST(TimeOffset, MultiWindowConstantBias)
   dt = 0.010;
   dthat = 0.0;
 
+  multirotor.truth_transmission_time_ = dt;
+  multirotor.truth_update_rate_ = 5;
+
   Problem problem;
 
   Eigen::MatrixXd xhat, x;
