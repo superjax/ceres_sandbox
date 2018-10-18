@@ -188,7 +188,7 @@ TEST(Imu3D, SingleWindow)
 
     Imu3DFactorCostFunction *factor = new Imu3DFactorCostFunction(0, bhat, multirotor.get_imu_noise_covariance());
 
-    // Integrate for 1 second
+    // Integrate for 0.1 second
     while (multirotor.t_ < 1.0)
     {
         multirotor.run();
@@ -208,7 +208,7 @@ TEST(Imu3D, SingleWindow)
 
     // Add measurement of final pose
     x.col(1) = multirotor.get_pose().arr_;
-    Matrix6d P = Matrix6d::Identity() * 1e-8;
+    Matrix6d P = Matrix6d::Identity() * 1e-16;
     problem.AddResidualBlock(new XformNodeFactorAutoDiff(new XformNodeFactorCostFunction(x.col(1), P)), NULL, xhat.data()+7);
 
 
@@ -239,7 +239,7 @@ TEST(Imu3D, SingleWindow)
 //    cout << "\ny: " << factor->y_.transpose() << endl;
 //    cout << "y+dy: " << boxplus(factor->y_, factor->J_ *(bhat - factor->bhat_)).transpose() << endl;
 //    cout << "\nP: \n" << factor->P_ << endl;
-    EXPECT_LE(error, 0.1);
+    EXPECT_LE(error, 0.2);
 }
 
 TEST(Imu3D, MultiWindow)
@@ -403,4 +403,5 @@ TEST(Imu3D, MultiWindow)
     }
     truth_file.close();
     est_file.close();
+    google::ShutdownGoogleLogging();
 }

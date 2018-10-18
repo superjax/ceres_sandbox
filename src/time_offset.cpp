@@ -327,5 +327,6 @@ TEST(TimeOffset, MultiWindowConstantBias)
   }
   truth_file.close();
   est_file.close();
+  google::ShutdownGoogleLogging();
 }
 

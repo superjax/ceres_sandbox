@@ -66,7 +66,7 @@ public:
     XformNodeFactorCostFunction(const Vector7d& _xbar, const Matrix6d& _P)
     {
       xbar_ = Xformd(_xbar);
-      Omega_ = _P.inverse();
+      Omega_ = _P.inverse().llt().matrixL().transpose();
     }
 
     template<typename T>
