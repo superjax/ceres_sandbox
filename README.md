@@ -67,13 +67,31 @@ Using the `Range1dFactor` with range measurements to several landmarks also on t
 ### IMU.dydb
 In writing the `IMU1dFactor`, I had to figure out the jacobian to map changes in bias to changes in the measurement.  This test proves that the jacobian I cam up with is right.
 
+## Imu3D
+The biggest reason I did all this was to help me in my work on SLAM with autonomous agents.  Often, I have IMU measurements onboard, but these occur at a very high rate.  The goal of these examples is to preintegrate these IMU measurements and estimate biases while doing SLAM.
+
+### Imu3D.CheckDynamicsJacobians
+This examples simply checks the jacobians of the dynamics in the `Imu3DFactorCostFunction` class
+
+### Imu3D.CheckBiasJacobians
+This example checks the jacobian used to modify the preintegrated measurement given a change in bias.
+
+### Imu3D.SingleWindow
+This preintegrates a single window and estimates the IMU bias given a fixed origin and a measurement of the final pose.
+
+### Imu3D/MultiWindow
+This example simulates the flight of a multirotor given measurements of pose at regular intervals.  IMU is preintegrated at 250Hz while Pose measurements are supplied at 5Hz.  The constant IMU biases are estimated over the interval.  The results of this study can be visualized using the `Imu3DMultiWindowPlot.m` matlab script.
+
 ## TimeOffset
-Another problem in Robotics is time synchronization between different sensors.  This example is a 1D robot performing SLAM with IMU preintegration as in the `IMU.1DRobotSLAM` example, except that I also have a measurement of each node with a small time delay.  I use the `Position1dFactorWithTimeOffset` factor to estimate this delay.
+Another problem in Robotics is time synchronization between different sensors.  The following examples show how to estimate this time offset.
+
+### TimeOffset.1DRobotSLAM
+This example is a 1D robot performing SLAM with IMU preintegration as in the `IMU.1DRobotSLAM` example, except that I also have a measurement of the position of each node with a small time delay.  I use the `Position1dFactorWithTimeOffset` factor to estimate this delay.
+
+### TimeOffset.3DMultirotorPoseGraph
+This example is of a multirotor flying waypoints with a lagged position and attitude measurement (as experienced by a motion capture system).  The goal is to estimate this offset, IMU bias and the location of all poses simultaneously.  The results of this example can be visualized by running the `TimeOffsetMultiWindowPlot.m` matlab script.
 
 # TODO:
-
-### IMU.3DRobotSmoothing
-In this example, I have a simulate 3D rigid body which moves in space over all 6 degrees of freedom.  I have a simulated IMU with constant accelerometer and rate gyro biases.  I also am using the `XformNodeFactor` to apply measurements of pose directly and therefore infer the biases.
 
 ### IMU.3DRobotSLAM
 This example is the full SLAM problem - a 3D rigid body moves in space, and has bearing measurements to several landmarks.  Performs SLAM while inferring IMU biases.

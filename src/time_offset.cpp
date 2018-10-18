@@ -122,7 +122,7 @@ TEST(TimeOffset, 1DRobotSLAM)
 
 }
 
-TEST(TimeOffset, MultiWindowConstantBias)
+TEST(TimeOffset, 3DmultirotorPoseGraph)
 {
   google::InitGoogleLogging("Imu3D.MultiWindow");
   Simulator multirotor(false);
