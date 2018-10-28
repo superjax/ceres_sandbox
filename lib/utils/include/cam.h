@@ -17,7 +17,8 @@ public:
     typedef Matrix<T,5,1> Vec5;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    Camera() :
+    Camera(const Vec2& img_size) :
+        image_size_(img_size),
         focal_len_(buf_),
         cam_center_(buf_+2),
         distortion_(buf_+4)
@@ -44,10 +45,11 @@ public:
     {
         T pt_z = pt(2);
         pix = focal_len_.asDiagonal() * (pt.template segment<2>(0) / pt_z) + cam_center_;
+        return  !((pix.array() > image_size_.array()).any()|| (pix.array() < 0).any());
     }
 
 
-    bool invProj(const Vec2& pix, const T& depth, Vec3& pt)
+    void invProj(const Vec2& pix, const T& depth, Vec3& pt)
     {
         pt.template segment<2>(0) = (pix - cam_center_).array() / focal_len_.array();
         pt(2) = 1.0;
@@ -57,6 +59,7 @@ public:
     Map<Vec2> focal_len_;
     Map<Vec2> cam_center_;
     Map<Vec5> distortion_;
+    Vec2 image_size_;
 
     T buf_[9];
 };

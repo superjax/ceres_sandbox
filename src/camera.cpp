@@ -5,7 +5,7 @@
 
 TEST(Camera, Proj_InvProj)
 {
-  Camera<double> cam;
+  Camera<double> cam(Vector2d{640, 480});
 
   cam.focal_len_ << 250, 250;
   cam.cam_center_ << 320, 240;
