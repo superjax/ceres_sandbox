@@ -51,7 +51,7 @@ TEST(Camera, Distort_UnDistort)
 
     cam.pix2intrinsic(pix_d, pi_d);
     cam.Distort(pi_d, pi_u);
-    cam.UnDistort(pi_u, pi_d2);
+    cam.unDistort(pi_u, pi_d2);
     cam.intrinsic2pix(pi_d2, pix_d2);
 
     EXPECT_NEAR(pix_d2.x(), pix_d.x(), 1e-3);
@@ -75,7 +75,7 @@ TEST(Camera, UnDistort_Distort)
     Vector2d pi_d, pi_u;
 
     cam.pix2intrinsic(pix_u, pi_u);
-    cam.UnDistort(pi_u, pi_d);
+    cam.unDistort(pi_u, pi_d);
     cam.Distort(pi_d, pi_u2);
     cam.intrinsic2pix(pi_u2, pix_u2);
 
@@ -98,7 +98,7 @@ TEST (Camera, DistortJacobian)
     auto fun = [cam](const MatrixXd& x_u)
     {
         Vector2d x_d;
-        cam.UnDistort(x_u, x_d);
+        cam.unDistort(x_u, x_d);
         return x_d;
     };
 
@@ -143,7 +143,9 @@ TEST (Camera, Intrinsics_Calibration)
 
     Vector2d fhat = focal_len + Vector2d::Random()*25;
     Vector2d chat = cam_center + Vector2d::Random()*25;
-    Vector5d dhat = distortion + Vector5d::Random()*1e-1;;
+    Vector5d dhat = distortion + Vector5d::Random()*1e-3;
+//    Vector5d dhat = Vector5d::Random()*1e-3;
+//    Vector5d dhat = Vector5d::Zero();
     double shat = s + (rand() % 1000)*1e-6;
 
     MatrixXd xhat = camera_pose;
@@ -168,9 +170,9 @@ TEST (Camera, Intrinsics_Calibration)
     Matrix2d cov = Matrix2d::Identity() * 1e-5;
     for (int i = 0; i < 9; i++)
     {
+        Xformd x_w2c(camera_pose.col(i)); // transform from world to camera
         for (int j = 0; j < 100; j++)
         {
-            Xformd x_w2c(camera_pose.col(i)); // transform from world to camera
             Vector2d pix;
             cam.proj(x_w2c.transformp(landmarks.col(j)), pix);
 
@@ -196,7 +198,7 @@ TEST (Camera, Intrinsics_Calibration)
     cout << "shat0\t" << shat << endl;
 
     ceres::Solve(options, &problem, &summary);
-//    std::cout << summary.FullReport();
+    std::cout << summary.FullReport();
 
     cout << "fhatf\t" << fhat.transpose() << " : " << focal_len.transpose() << endl;
     cout << "chatf\t" << chat.transpose() << " : " << cam_center.transpose() << endl;

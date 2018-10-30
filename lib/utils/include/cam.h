@@ -47,7 +47,7 @@ public:
         image_size_ = size;
     }
 
-    void UnDistort(const Vec2& pi_u, Vec2& pi_d) const
+    void unDistort(const Vec2& pi_u, Vec2& pi_d) const
     {
         const T k1 = distortion_(0);
         const T k2 = distortion_(1);
@@ -79,24 +79,30 @@ public:
         Vec2 pihat_d;
         Mat2 J;
         Vec2 e;
+        T prev_e = (T)1000.0;
+        T enorm = (T)0.0;
 
         static const int max_iter = 50;
         int i = 0;
         while (i < max_iter)
         {
-            UnDistort(pi_u, pihat_d);
+            unDistort(pi_u, pihat_d);
             e = pihat_d - pi_d;
-            if (e.norm() <= tol)
+            enorm = e.norm();
+            if (enorm <= tol || prev_e < enorm)
                 break;
+            prev_e = enorm;
 
             distortJac(pi_u, J);
             pi_u = pi_u - J*e;
             i++;
         }
 
-        if (i == max_iter)
-            throw std::runtime_error("UnDistortion failed to converge, err: " + std::to_string(e.norm())
-                                     + ", tol: " + std::to_string(tol));
+
+        if ((pi_u.array() != pi_u.array()).any())
+        {
+            int debug = 1;
+        }
     }
 
     void distortJac(const Vec2& pi_u, Mat2& J) const
@@ -107,28 +113,33 @@ public:
         const T p2 = distortion_(3);
         const T k3 = distortion_(4);
 
-        T x = pi_u.x();
-        T y = pi_u.y();
-        T xy = x*y;
-        T xx = x*x;
-        T yy = y*y;
-        T rr = xx+yy;
-        T r = sqrt(rr);
-        T r4 = rr*rr;
-        T r6 = rr*r4;
-        T g =  1.0 + k1 * rr + k2 * r4 + k3*r6;
-        T dx = (x + (2.0*p1*xy + p2*(rr+2.0*xx)));
-        T dy = (y + (p1*(rr+2.0*yy) + 2.0*p2*xy));
+        const T x = pi_u.x();
+        const T y = pi_u.y();
+        const T xy = x*y;
+        const T xx = x*x;
+        const T yy = y*y;
+        const T rr = xx+yy;
+        const T r = sqrt(rr);
+        const T r4 = rr*rr;
+        const T r6 = rr*r4;
+        const T g =  (T)1.0 + k1 * rr + k2 * r4 + k3*r6;
+        const T dx = (x + ((T)2.0*p1*xy + p2*(rr+(T)2.0*xx)));
+        const T dy = (y + (p1*(rr+(T)2.0*yy) + (T)2.0*p2*xy));
 
-        T drdx = x / r;
-        T drdy = y / r;
-        T dgdx = k1*2.0*r*drdx + 4.0*k2*rr*r*drdx + 6.0*k3*r4*r*drdx;
-        T dgdy = k1*2.0*r*drdy + 4.0*k2*rr*r*drdy + 6.0*k3*r4*r*drdy;
+        const T drdx = x / r;
+        const T drdy = y / r;
+        const T dgdx = k1*(T)2.0*r*drdx + (T)4.0*k2*rr*r*drdx + (T)6.0*k3*r4*r*drdx;
+        const T dgdy = k1*(T)2.0*r*drdy + (T)4.0*k2*rr*r*drdy + (T)6.0*k3*r4*r*drdy;
 
-        J << /* dxbar/dx */ (1.0 + (2.0*p1*y + p2*(2.0*r*drdx + 4.0*x)))*g + dx*dgdx,
-                /* dxbar/dy */ (2.0*p1*x + p2*2.0*r*drdy)*g + dx*dgdy,
-                /* dybar/dx */ (p1*2.0*r*drdx+2*p2*y)*g + dy*dgdx,
-                /* dybar/dy */ (1.0 + (p1*(2.0*r*drdy + 4.0*y) + 2.0*p2*x))*g + dy*dgdy;
+        J << /* dxbar/dx */ ((T)1.0 + ((T)2.0*p1*y + p2*((T)2.0*r*drdx + (T)4.0*x)))*g + dx*dgdx,
+             /* dxbar/dy */ ((T)2.0*p1*x + p2*(T)2.0*r*drdy)*g + dx*dgdy,
+             /* dybar/dx */ (p1*(T)2.0*r*drdx+(T)2.0*p2*y)*g + dy*dgdx,
+             /* dybar/dy */ ((T)1.0 + (p1*((T)2.0*r*drdy + (T)4.0*y) + (T)2.0*p2*x))*g + dy*dgdy;
+
+        if ((J.array() != J.array()).any())
+        {
+            int debug = 1;
+        }
     }
 
 
@@ -155,7 +166,10 @@ public:
     void proj(const Vec3& pt, Vec2& pix) const
     {
         const T pt_z = pt(2);
-        pix = focal_len_.asDiagonal() * (pt.template segment<2>(0) / pt_z) + cam_center_;
+        Vec2 pi_d;
+        Vec2 pi_u = (pt.template segment<2>(0) / pt_z);
+        Distort(pi_u, pi_d);
+        intrinsic2pix(pi_d, pix);
     }
 
     inline bool check(const Vector2d& pix) const
@@ -165,7 +179,10 @@ public:
 
     void invProj(const Vec2& pix, const T& depth, Vec3& pt) const
     {
-        pt.template segment<2>(0) = (pix - cam_center_).array() / focal_len_.array();
+        Vec2 pi_d, pi_u;
+        pix2intrinsic(pix, pi_d);
+        unDistort(pi_d, pi_u);
+        pt.template segment<2>(0) = pi_u;
         pt(2) = 1.0;
         pt *= depth / pt.norm();
     }
