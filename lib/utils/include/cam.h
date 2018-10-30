@@ -1,11 +1,13 @@
-#pragma once
+﻿#pragma once
 
 #include <vector>
 #include <Eigen/Core>
+
+#include "utils/jac.h"
+
 using namespace std;
 using namespace Eigen;
 
-static const Matrix2d I_2x2 = Matrix2d::Identity();
 
 template <typename T>
 class Camera
@@ -17,49 +19,164 @@ public:
     typedef Matrix<T,5,1> Vec5;
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
 
-    Camera(const Vec2& img_size) :
-        image_size_(img_size),
-        focal_len_(buf_),
-        cam_center_(buf_+2),
-        distortion_(buf_+4)
+    Camera(const Vec2& f, const Vec2& c, const Vec5& d, const T& s) :
+        focal_len_(f.data()),
+        cam_center_(c.data()),
+        s_(s),
+        distortion_(d.data())
     {}
 
-    Camera(const Vec2& f, const Vec2& c, const Vec5& d) :
-        focal_len_(const_cast<T>(f.data())),
-        cam_center_(const_cast<T>(c.data())),
-        distortion_(const_cast<T>(d.data()))
+    Camera(const Vec2& f, const Vec2& c, const Vec5& d, const T& s, const Vector2d& size) :
+        focal_len_(f.data()),
+        cam_center_(c.data()),
+        s_(s),
+        distortion_(d.data())
+    {
+        setSize(size);
+    }
+
+    Camera(const T* f, const T* c, const T* d, const T* s) :
+        focal_len_(f),
+        cam_center_(c),
+        s_(*s),
+        distortion_(d)
     {}
 
-    void setFocalLen(const Vec2& f)
+    void setSize(const Vector2d& size)
     {
-        new (&focal_len_) Map<Vec2>(const_cast<T*>(f.data()));
+        image_size_ = size;
     }
 
-    void setCamCenter(const Vec2& c)
+    void UnDistort(const Vec2& pi_u, Vec2& pi_d) const
     {
-        new (&cam_center_) Map<Vec2>(const_cast<T*>(c.data()));
+        const T k1 = distortion_(0);
+        const T k2 = distortion_(1);
+        const T p1 = distortion_(2);
+        const T p2 = distortion_(3);
+        const T k3 = distortion_(4);
+        const T x = pi_u.x();
+        const T y = pi_u.y();
+        const T xy = x*y;
+        const T xx = x*x;
+        const T yy = y*y;
+        const T rr = xx*yy;
+        const T r4 = rr*rr;
+        const T r6 = r4*rr;
+
+
+        // https://docs.opencv.org/2.4/doc/tutorials/calib3d/camera_calibration/camera_calibration.html
+        const T g =  1.0 + k1 * rr + k2 * r4 + k3*r6;
+        const T dx = 2.0 * p1 * xy + p2 * (rr + 2.0 * xx);
+        const T dy = 2.0 * p2 * xy + p1 * (rr + 2.0 * yy);
+
+        pi_d.x() = g * (x + dx);
+        pi_d.y() = g * (y + dy);
+    }
+
+    void Distort(const Vec2& pi_d, Vec2& pi_u, double tol=1e-6) const
+    {
+        pi_u = pi_d;
+        Vec2 pihat_d;
+        Mat2 J;
+        Vec2 e;
+
+        static const int max_iter = 50;
+        int i = 0;
+        while (i < max_iter)
+        {
+            UnDistort(pi_u, pihat_d);
+            e = pihat_d - pi_d;
+            if (e.norm() <= tol)
+                break;
+
+            distortJac(pi_u, J);
+            pi_u = pi_u - J*e;
+            i++;
+        }
+
+        if (i == max_iter)
+            throw std::runtime_error("UnDistortion failed to converge, err: " + std::to_string(e.norm())
+                                     + ", tol: " + std::to_string(tol));
+    }
+
+    void distortJac(const Vec2& pi_u, Mat2& J) const
+    {
+        const T k1 = distortion_(0);
+        const T k2 = distortion_(1);
+        const T p1 = distortion_(2);
+        const T p2 = distortion_(3);
+        const T k3 = distortion_(4);
+
+        T x = pi_u.x();
+        T y = pi_u.y();
+        T xy = x*y;
+        T xx = x*x;
+        T yy = y*y;
+        T rr = xx+yy;
+        T r = sqrt(rr);
+        T r4 = rr*rr;
+        T r6 = rr*r4;
+        T g =  1.0 + k1 * rr + k2 * r4 + k3*r6;
+        T dx = (x + (2.0*p1*xy + p2*(rr+2.0*xx)));
+        T dy = (y + (p1*(rr+2.0*yy) + 2.0*p2*xy));
+
+        T drdx = x / r;
+        T drdy = y / r;
+        T dgdx = k1*2.0*r*drdx + 4.0*k2*rr*r*drdx + 6.0*k3*r4*r*drdx;
+        T dgdy = k1*2.0*r*drdy + 4.0*k2*rr*r*drdy + 6.0*k3*r4*r*drdy;
+
+        J << /* dxbar/dx */ (1.0 + (2.0*p1*y + p2*(2.0*r*drdx + 4.0*x)))*g + dx*dgdx,
+                /* dxbar/dy */ (2.0*p1*x + p2*2.0*r*drdy)*g + dx*dgdy,
+                /* dybar/dx */ (p1*2.0*r*drdx+2*p2*y)*g + dy*dgdx,
+                /* dybar/dy */ (1.0 + (p1*(2.0*r*drdy + 4.0*y) + 2.0*p2*x))*g + dy*dgdy;
     }
 
 
-    bool proj(const Vec3& pt, Vec2& pix)
+    void pix2intrinsic(const Vec2& pix, Vec2& pi) const
     {
-        T pt_z = pt(2);
+        const T fx = focal_len_.x();
+        const T fy = focal_len_.y();
+        const T cx = cam_center_.x();
+        const T cy = cam_center_.y();
+        pi << (1.0/fx) * (pix.x() - cx - (s_/fy) * (pix.y() - cy)),
+                (1.0/fy) * (pix.y() - cy);
+    }
+
+    void intrinsic2pix(const Vec2& pi, Vec2& pix) const
+    {
+        const T fx = focal_len_.x();
+        const T fy = focal_len_.y();
+        const T cx = cam_center_.x();
+        const T cy = cam_center_.y();
+        pix << fx*pi.x() + s_*pi.y() + cx,
+               fy*pi.y() + cy;
+    }
+
+    void proj(const Vec3& pt, Vec2& pix) const
+    {
+        const T pt_z = pt(2);
         pix = focal_len_.asDiagonal() * (pt.template segment<2>(0) / pt_z) + cam_center_;
-        return  !((pix.array() > image_size_.array()).any()|| (pix.array() < 0).any());
     }
 
+    inline bool check(const Vector2d& pix) const
+    {
+        return !((pix.array() > image_size_.array()).any()|| (pix.array() < 0).any());
+    }
 
-    void invProj(const Vec2& pix, const T& depth, Vec3& pt)
+    void invProj(const Vec2& pix, const T& depth, Vec3& pt) const
     {
         pt.template segment<2>(0) = (pix - cam_center_).array() / focal_len_.array();
         pt(2) = 1.0;
         pt *= depth / pt.norm();
     }
 
-    Map<Vec2> focal_len_;
-    Map<Vec2> cam_center_;
-    Map<Vec5> distortion_;
-    Vec2 image_size_;
+    Map<const Vec2> focal_len_;
+    Map<const Vec2> cam_center_;
+    Map<const Vec5> distortion_;
+    const T& s_;
+    Vector2d image_size_;
 
-    T buf_[9];
+private:
+    const Matrix2d I_2x2 = Matrix2d::Identity();
 };
+
