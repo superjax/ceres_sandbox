@@ -69,6 +69,8 @@ This takes a quaternion and creates 1000 samples normally distributed about this
 ## Attitude3d.AverageAttitudeAutoDiff
 Finds the average attitude of a sample of 1000 attitude measurements using the autodiff functionality for both the localparameterization and cost function.  I also used my templated `Quat` library and let Ceres auto-diff through my library (based on Eigen).
 
+This example led to an interesting result.  I spent something like 6 hours deriving the analytical jacobian for the previous example, and on the first go, the analytical version was about 50% faster than the auto-diff.  However.  I later on tried compiling all my code with [AVX2](https://en.wikipedia.org/wiki/Advanced_Vector_Extensions) and [FMA](https://en.wikipedia.org/wiki/Multiply%E2%80%93accumulate_operation) (If you do not know what these are, you are missing out), and the auto-diff versions sped up a whopping 600% - to the point that they now absolutely destroy the analytical version in terms of performance.  I am a little mystified at what actually is going on here, but I'm not complaining!  Fewer jacobians over manifolds for me is a good thing.  After this result I pretty much stopped using analytical jacobians at all and let the auto-differentiation engine do it's magic.
+
 # Pose3D
 Next, I figured I could do some pose-graph SLAM in SE3
 
