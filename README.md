@@ -6,6 +6,36 @@ So, I broke the problem into little peices and wrote a bunch of simple cases to 
 
 Borrowing off the _factor graph_ mindset (I'm from a SLAM background), I organized all my cost functions into _factors_, found in `include/factors`
 
+ * [Position1D](#position1d)
+    * [Position1D.AveragePoints](#position1daveragepoints)
+    * [Position1D.AveragePointsWithParameterBlock](#position1daveragepointswithparameterblock)
+    * [Robot1D.SLAM](#robot1dslam)
+ * [Position3D](#position3d)
+    * [Position3D.AveragePoints](#position3daveragepoints)
+ * [Attitude3D](#attitude3d)
+    * [Attitude3d.Check*](#attitude3dcheck)
+    * [Attitude3d.AverageAttitude](#attitude3daverageattitude)
+    * [Attitude3d.AverageAttitudeAutoDiff](#attitude3daverageattitudeautodiff)
+ * [Pose3D](#pose3d)
+    * [Pose3D.AveragePoseAutoDiff](#pose3daverageposeautodiff)
+    * [Pose3D.GraphSLAM](#pose3dgraphslam)
+ * [Imu1D](#imu1d)
+    * [IMU.1DRobotSingleWindow](#imu1drobotsinglewindow)
+    * [IMU.1DRobotLocalization](#imu1drobotlocalization)
+    * [IMU.1DRobotSLAM](#imu1drobotslam)
+    * [IMU.dydb](#imudydb)
+ * [Imu3D](#imu3d)
+    * [Imu3D.CheckDynamicsJacobians](#imu3dcheckdynamicsjacobians)
+    * [Imu3D.CheckBiasJacobians](#imu3dcheckbiasjacobians)
+    * [Imu3D.SingleWindow](#imu3dsinglewindow)
+    * [Imu3D/MultiWindow](#imu3dmultiwindow)
+ * [TimeOffset](#timeoffset)
+    * [TimeOffset.1DRobotSLAM](#timeoffset1drobotslam)
+    * [TimeOffset.3DMultirotorPoseGraph](#timeoffset3dmultirotorposegraph)
+    * [IMU.3DRobotSLAM](#imu3drobotslam)
+ * [camera.cpp](#cameracpp)
+    * [Camera.Intrinsics_Calibration](#cameraintrinsics_calibration)
+
 
 ## Position1D
 The first set of unit tests looks at the simplest problems.
@@ -91,19 +121,11 @@ This example is a 1D robot performing SLAM with IMU preintegration as in the `IM
 ### TimeOffset.3DMultirotorPoseGraph
 This example is of a multirotor flying waypoints with a lagged position and attitude measurement (as experienced by a motion capture system).  The goal is to estimate this offset, IMU bias and the location of all poses simultaneously.  The results of this example can be visualized by running the `TimeOffsetMultiWindowPlot.m` matlab script.
 
-# TODO:
-
 ### IMU.3DRobotSLAM
 This example is the full SLAM problem - a 3D rigid body moves in space, and has bearing measurements to several landmarks.  Performs SLAM while inferring IMU biases.
 
-### IMU.TransformEstimation
-In this example, the IMU has a constant bias on each axis, as well as a constant transform between the IMU and body frame.  The goal of this simulation is to use ceres to estimate this unknown transform.
-
-## `camera.cpp`
+## Camera
 Next, I wanted to use the ceres solver to deal with the projection associated with a pinhole camera model.
 
-### Camera.Calibration
+### Camera.Intrinsics_Calibration
 This example simulates the calibration of a pinhole camera.  A 3D rigid body gets simulated pixel measurements to known landmarks in the camera FOV. The camera intrinsics are estimated.
-
-### Camera.Transform
-This example estimates the transform between a simulated camera, the body frame, camera intrinsics and the IMU frame given pose measurements, pixel measurements, and IMU measurements
