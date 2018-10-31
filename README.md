@@ -69,6 +69,8 @@ This takes a quaternion and creates 1000 samples normally distributed about this
 ## Attitude3d.AverageAttitudeAutoDiff
 Finds the average attitude of a sample of 1000 attitude measurements using the autodiff functionality for both the localparameterization and cost function.  I also used my templated `Quat` library and let Ceres auto-diff through my library (based on Eigen).
 
+This example led to an interesting result.  I spent something like 6 hours deriving the analytical jacobian for the previous example, and found essentially _zero_ performance increase (In fact, the auto-diff version is typically a little bit faster).  While I feel a little sheepish for thinking that I could out-optimize the compiler on this once, fewer jacobians over manifolds for me is a good thing.  After this result I pretty much stopped using analytical jacobians at all and let the auto-differentiation engine do its magic.
+
 # Pose3D
 Next, I figured I could do some pose-graph SLAM in SE3
 
@@ -129,3 +131,25 @@ Next, I wanted to use the ceres solver to deal with the projection associated wi
 
 ## Camera.Intrinsics_Calibration
 This example simulates the calibration of a pinhole camera.  A 3D rigid body gets simulated pixel measurements to known landmarks in the camera FOV. The camera intrinsics are estimated.
+
+
+# Building The Code
+There aren't any real linux-specific dependencies that I know of, but I use linux almost exclusively and do not know if this will work on Windows or Mac. You do need Eigen `sudo apt install libeigen3-dev` and the ceres sovler, [installation](http://ceres-solver.org/installation.html).  I would recommend building the latetest stable release from source and be sure to grab the suitesparse and cxsparse dependencies. This development took place with ceres 1.14.0 and eigen 3.3.4.  I noticed that Eigen threw alignment errors with the `master` branch, which I found odd.  You'll also need gtest [installation](https://www.eriksmistad.no/getting-started-with-google-test-on-ubuntu/).  
+
+This project depends on my templated `geometry` library for homogeneous transforms and quaternions as well as my C++ multirotor simulator I developed with @jerelbn.  (These are included as submodules).
+
+Once you've got all the libraries installed, it's a simple CMake build.
+
+``` bash
+mkdir build
+cd build
+cmake .. -DCMAKE_BUILD_TYPE=Release
+make -j -l
+```
+
+# Running The Examples
+All the code in this repo is organized into a big unit test suite.  The tests usuall all pass, but not always, and if they don't they are really close.  Just run the `ceres_tests` executable.  Being a Gtest suite, it has a number of command-line arguments that it supports.  Try `-h` to see the available command-line options.
+
+```
+./ceres_tests
+```
