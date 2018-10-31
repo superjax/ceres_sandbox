@@ -33,7 +33,7 @@ Borrowing off the _factor graph_ mindset (I'm from a SLAM background), I organiz
     * [TimeOffset.1DRobotSLAM](#timeoffset1drobotslam)
     * [TimeOffset.3DMultirotorPoseGraph](#timeoffset3dmultirotorposegraph)
     * [IMU.3DRobotSLAM](#imu3drobotslam)
- * [camera.cpp](#cameracpp)
+ * [Camera](#cameracpp)
     * [Camera.Intrinsics_Calibration](#cameraintrinsics_calibration)
 
 
