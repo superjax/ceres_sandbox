@@ -2,7 +2,7 @@
 #include <ceres/ceres.h>
 
 #include "geometry/xform.h"
-#include "cam.h"
+#include "utils/cam.h"
 #include "factors/camera.h"
 #include "factors/SE3.h"
 #include "multirotor_sim/utils.h"
