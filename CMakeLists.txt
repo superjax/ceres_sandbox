@@ -2,7 +2,8 @@ cmake_minimum_required(VERSION 2.8.3)
 project(ceres_sandbox)
 
 set(CMAKE_CXX_STANDARD 14)
-SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -fopenmp -mfma")
+#SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfma")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -mfma")
 
 find_package(Ceres REQUIRED)
 find_package(Eigen3 REQUIRED)
@@ -28,7 +29,6 @@ add_library(factors
     lib/factors/src/imu_3d.cpp)
 
 add_executable(ceres_tests
-    src/extrinsics3d.cpp
     src/position1d.cpp
     src/position3d.cpp
     src/attitude.cpp
