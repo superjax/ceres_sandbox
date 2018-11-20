@@ -132,6 +132,12 @@ Next, I wanted to use the ceres solver to deal with the projection associated wi
 ## Camera.Intrinsics_Calibration
 This example simulates the calibration of a pinhole camera.  A 3D rigid body gets simulated pixel measurements to known landmarks in the camera FOV. The camera intrinsics are estimated.
 
+# Control
+Finally, I wanted to see how well-suited Ceres was to solving the model-predictive control and trajectory optimization problem.
+
+## Control.Robot1d_OptimizeTrajectory
+This implements the simple minimum force "move block" example from Matthew Kelly's [Trajectory Optimization tutorial paper](https://epubs.siam.org/doi/pdf/10.1137/16M1062569)
+
 
 # Building The Code
 There aren't any real linux-specific dependencies that I know of, but I use linux almost exclusively and do not know if this will work on Windows or Mac. You do need Eigen `sudo apt install libeigen3-dev` and the ceres sovler, [installation](http://ceres-solver.org/installation.html).  I would recommend building the latetest stable release from source and be sure to grab the suitesparse and cxsparse dependencies. This development took place with ceres 1.14.0 and eigen 3.3.4.  I noticed that Eigen threw alignment errors with the `master` branch, which I found odd.  You'll also need gtest [installation](https://www.eriksmistad.no/getting-started-with-google-test-on-ubuntu/).  
