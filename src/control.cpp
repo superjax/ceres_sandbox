@@ -76,21 +76,29 @@ TEST (Control, Robot1d_OptimizeTrajectorySingleWindow)
 
 TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
 {
-  Matrix2d x_desired;
-  x_desired << 0, 1,
-               0, 0;
 
-  const int W = 1; // Number of windows
+  const int W = 2; // Number of windows
   const int K = 500; // collocation Points per window
   double tmax = 1.0;
   double dt = tmax/(double)K;
 
+  Matrix<double, 2, W+1> x_desired;
+  x_desired << 0, 1, 0,
+               0, 0, 0;
+
   MatrixXd x;
   MatrixXd u;
-  x.setZero(2, K*W);
-  u.setZero(1, K*W);
+  x.setZero(2, K*W+1);
+  u.setZero(1, K*W+1);
 
   ceres::Problem problem;
+
+  for (int i = 0; i <= K*W; i++)
+  {
+    // add parameter blocks
+    problem.AddParameterBlock(x.data() + 2*i, 2);
+    problem.AddParameterBlock(u.data() + i, 1);
+  }
 
   for (int w = 0; w < W; w++)
   {
@@ -100,12 +108,6 @@ TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
 
     double v_init = (xf[0] - x0[0])/tmax;
 
-    for (int i = 0; i < K; i++)
-    {
-      // add parameter blocks
-      problem.AddParameterBlock(x.data() + 2*i, 2);
-      problem.AddParameterBlock(u.data() + i, 1);
-    }
 
     // pin initial pose (constraint)
     problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data());
@@ -115,9 +117,10 @@ TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
       if (i == 0)
       {
         problem.AddResidualBlock(new PositionVelocityConstraint1DFactor(
-                                   new PositionVelocityConstraint1D(x0[0], x0[1])), NULL, x.data() + id);
+                                   new PositionVelocityConstraint1D(x0[0], x0[1])), NULL, x.data() + id*2);
       }
-      else
+
+      if (id > 0)
       {
         // dynamics constraint
         problem.AddResidualBlock(new DynamicsContraint1DFactor(new DynamicsConstraint1D(dt)), NULL,
@@ -125,15 +128,20 @@ TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
       }
       // input cost
       problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data()+id);
-      x.col(id) << v_init*i*dt, v_init;
+      x.col(id) << x0[0] + v_init*i*dt, v_init;
       u(id) = 0;
     }
   }
 
   // pin final pose (constraint)
+  int id = K*W;
   Vector2d xf = x_desired.rightCols(1);
-  problem.AddResidualBlock(new PositionVelocityConstraint1DFactor(new PositionVelocityConstraint1D(xf[0], xf[1])), NULL, x.data()+2*(K*W-1));
-  x.col(K-1) << xf[0], 1.0;
+  problem.AddResidualBlock(new DynamicsContraint1DFactor(new DynamicsConstraint1D(dt)), NULL,
+                           x.data()+(id-1)*2, x.data()+id*2, u.data()+id-1, u.data()+id);
+  problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data()+id);
+  problem.AddResidualBlock(new PositionVelocityConstraint1DFactor(
+                           new PositionVelocityConstraint1D(xf[0], xf[1])), NULL, x.data() + id*2);
+  x.col(id) << xf[0], 1.0;
 
   ceres::Solver::Options options;
   options.max_num_iterations = 1000;
