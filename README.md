@@ -136,7 +136,10 @@ This example simulates the calibration of a pinhole camera.  A 3D rigid body get
 Finally, I wanted to see how well-suited Ceres was to solving the model-predictive control and trajectory optimization problem.
 
 ## Control.Robot1d_OptimizeTrajectory
-This implements the simple minimum force "move block" example from Matthew Kelly's [Trajectory Optimization tutorial paper](https://epubs.siam.org/doi/pdf/10.1137/16M1062569)
+This implements the simple minimum force "move block" example from Matthew Kelly's [Trajectory Optimization tutorial paper](https://epubs.siam.org/doi/pdf/10.1137/16M1062569).  The results of the optimization can be plotted with `TrajectoryOptimization1DPlot.m` 
+
+## Control.3DMultirotor_OptimizeTrajectory
+This extends the trajectory optimiztion problem to 3D with a quadrotor agent.  This is trajectory optimization on manifold.
 
 
 # Building The Code

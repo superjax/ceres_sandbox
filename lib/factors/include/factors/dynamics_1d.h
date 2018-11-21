@@ -58,7 +58,7 @@ public:
   template <typename T>
   bool operator() (const T* u, T* res) const
   {
-    res[0] = u[0]*u[0];
+    res[0] = u[0];
     return true;
   }
 };
