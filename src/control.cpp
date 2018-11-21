@@ -77,14 +77,14 @@ TEST (Control, Robot1d_OptimizeTrajectorySingleWindow)
 TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
 {
 
-  const int W = 2; // Number of windows
+  const int W = 8; // Number of windows
   const int K = 500; // collocation Points per window
   double tmax = 1.0;
   double dt = tmax/(double)K;
 
   Matrix<double, 2, W+1> x_desired;
-  x_desired << 0, 1, 0,
-               0, 0, 0;
+  x_desired << 0,  1, 0, 3, -1,  0, -4,  0, 5,
+               0, -6, 0, 9,  0, -9,  0, 15, 0;
 
   MatrixXd x;
   MatrixXd u;
