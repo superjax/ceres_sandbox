@@ -23,10 +23,21 @@ include_directories(include
 
 add_library(utils
     lib/utils/src/jac.cpp
-    lib/utils/src/robot1d.cpp)
+    lib/utils/src/robot1d.cpp
+    lib/utils/src/estimator_wrapper.cpp)
 
-add_library(factors
-    lib/factors/src/imu_3d.cpp)
+add_executable(dev_test
+    src/dev_test.cpp)
+target_link_libraries(dev_test
+    utils
+    geometry
+    multirotor_sim
+    gtest
+    gtest_main
+    ${GTEST_LIBRARIES}
+    ${CERES_LIBRARIES}
+)
+
 
 add_executable(ceres_tests
     src/position1d.cpp
@@ -37,10 +48,9 @@ add_executable(ceres_tests
     src/imu3d.cpp
     src/time_offset.cpp
     src/camera.cpp
-    src/control.cpp
+#    src/control.cpp
 )
 target_link_libraries(ceres_tests
-    factors
     utils
     geometry
     multirotor_sim

@@ -114,7 +114,7 @@ public:
   {
     quat::Quat<T> q2(_q2);
     Map<Matrix<T,3,1>> r(res);
-    r = q_ - q2;
+    r = q_.template boxminus<T>(q2);
     return true;
   }
 

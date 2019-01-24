@@ -1,7 +1,7 @@
 tmax: 300.0 # Simulation total time, time step is determined by IMU rate
-
-random_seed: -1 # -1 initializes seed with time
-
+dt: 0.002
+seed: -1 # -1 initializes seed with time
+log_filename: ""
 # Path type:
 #   0 : waypoints
 #   1 : random waypoints
@@ -18,6 +18,11 @@ waypoints: [
             -8, -12, -4.5, -2.3,
             8, -5, -4, 1.7
             ]
+
+# Control type
+# 0: Nonlinear controller
+# 1: LQR controller
+control_type: 0
 
 # Random waypoints parameters
 num_random_waypoints: 30
@@ -57,15 +62,17 @@ waypoint_velocity_threshold: 0.5
 drag_constant: 0.1
 angular_drag_constant: 0.01
 
-Kp: [1, 0, 0,
-     0, 1, 0,
-     0, 0, 1]
-Kd: [0, 0, 0,
-     0, 0, 0,
-     0, 0, 0]
-Kv: [2, 0, 0,
-     0, 2, 0,
-     0, 0, 2]
+Kp: [1, 1, 1]
+Kd: [0, 0, 0]
+Kv: [2, 2, 2]
+sh_kv: 50 # Hover throttle velocity gain
+sh_ks: 0.1 # Hover throttle gain
+
+lqr_max_pos_error: 0.5
+lqr_max_vel_error: 0.5
+lqr_max_yaw_error: 0.1
+lqr_Q: [1, 1, 10, 100, 100, 100]
+lqr_R: [10000, 1000, 1000, 1000]
 
 roll_kp: 10.0
 roll_ki: 0.0
@@ -88,10 +95,9 @@ max_tau_z: 1.0
 inertia: [0.1, 0.1, 0.1]
 
 x0: [0, 0, -5,    # POS
-     1, 0, 0,    # VEL
      1, 0, 0, 0, # ATT 
-     0, 0, 0,    # OMEGA 
-     0, 0, 0]    # ACC
+     1, 0, 0,    # VEL
+     0, 0, 0]    # OMEGA 
 
 
 # Environment Setup
@@ -106,6 +112,7 @@ wind_init_stdev: 0.1 # Variation on the initial wind direction components
 wind_walk_stdev: 0.1 # Amount of random walk in wind components
 
 
+
 # Truth Configuration
 use_accel_truth: false
 use_gyro_truth: false
@@ -114,28 +121,26 @@ use_altimeter_truth: false
 use_depth_truth: false
 use_attitude_truth: false
 use_position_truth: false
+use_vo_truth: false
 
 RK4: true
 
-
 # Sensor Configuration
-
-## Active Measurements
-init_depth: false
-feature_update_active: true
-drag_update_active: true
-attitude_update_active: false
-position_update_active: false
-depth_update_active: false
-altimeter_update_active: false
+imu_enabled: true
+alt_enabled: true
+att_enabled: true
+pos_enabled: true
+vo_enabled: true
+features_enabled: true
+gnss_enabled: true
 
 ## IMU
 imu_update_rate: 250
 accel_init_stdev: 0.1
-accel_noise_stdev: 0.1
+accel_noise_stdev: 0.7
 accel_bias_walk: 0.00
 gyro_init_stdev: 0.1
-gyro_noise_stdev: 0.1
+gyro_noise_stdev: 0.3
 gyro_bias_walk: 0.0
 
 ## Camera
@@ -145,12 +150,17 @@ pixel_noise_stdev: 2.0
 focal_len: [250.0, 250.0]
 cam_center: [320, 240]
 image_size: [640, 480]
+loop_closure: false
 # q_b_c: [1, 0, 0, 0]
 q_b_c: [0.712301460669, -0.00770717975554, 0.0104993233706, 0.701752800292]
 p_b_c: [1.0, 0.0, 0.0 ]
 # p_b_c: [-0.0216401454975, -0.064676986768, 0.00981073058949 ]
-# t_b_c: [-0.0216401454975, -0.064676986768, 0.00981073058949 ]
-t_b_c: [1.0, 0.0, 0.0 ]
+p_b_u: [0.0, 0.0, 0.0 ]
+q_b_u: [1.0, 0.0, 0.0, 0.0]
+vo_delta_position: 1.0
+vo_delta_attitude: 0.1
+vo_translation_noise_stdev: 0.1
+vo_rotation_noise_stdev: 0.01
 
 ## Altimeter
 altimeter_update_rate: 25
@@ -161,6 +171,8 @@ depth_update_rate: 30
 depth_noise_stdev: 0.1
 
 ## Truth
+p_b_m: [0.0, 0.0, 0.0]
+q_b_m: [1.0, 0.0, 0.0, 0.0]
 truth_update_rate: 5
 attitude_noise_stdev: 0.01
 position_noise_stdev: 0.01
@@ -168,3 +180,11 @@ truth_delay: 0
 truth_time_offset: 0
 truth_transmission_noise: 0
 truth_transmission_time: 0
+
+## GPS
+ref_LLA: [0.702443501891, -1.9486196478, 1387.998309] # (rad, rad, m)
+gps_update_rate: 5
+use_gps_truth: false
+gps_horizontal_position_stdev: 1.0
+gps_vertical_position_stdev: 3.0
+gps_velocity_stdev: 0.1

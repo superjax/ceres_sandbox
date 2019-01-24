@@ -67,7 +67,7 @@ TEST(Position1D, AveragePointsWithParameterBlock)
 TEST(Position1D, SLAM)
 {
   double rvar = 1e-5;
-  double evar = 1e-1;
+  double evar = 1e-3;
 
   Eigen::Matrix<double, 8, 1> x;
   x << 0, 1, 2, 3, 4, 5, 6, 7;
@@ -76,7 +76,7 @@ TEST(Position1D, SLAM)
   l << 10.0, 15.0, 13.0;
 
   Eigen::Matrix<double, 3, 1> lhat;
-  lhat << 12.0, 9.0, 15.0;
+  lhat << 11.0, 12.0, 15.0;
 
   Eigen::Matrix<double, 8, 1> xhat;
   xhat(0) = 0;
@@ -110,11 +110,19 @@ TEST(Position1D, SLAM)
   options.minimizer_progress_to_stdout = false;
 
   Solver::Summary summary;
-//  std::cout << "x: " << x.transpose() << "  l: " << l.transpose() << "\n";
+//  std::cout << "x: " << x.transpose() << std::endl;
+//  std::cout << "  l: " << l.transpose() << std::endl << std::endl;
+
   double e0 = (x-xhat).norm() + (l-lhat).norm();
-//  std::cout << "x0: " << xhat.transpose() << "  l0: " << lhat.transpose() << "  e: " << e0 << "\n";
+//  std::cout << "x0: " << xhat.transpose() << std::endl;
+//  std::cout << "l0: " << lhat.transpose() << std::endl;
+//  std::cout << "e0: " << e0 << std::endl << std::endl;
+
   ceres::Solve(options, &problem, &summary);
   double ef = (x-xhat).norm() + (l-lhat).norm();
-//  std::cout << "xf: " << xhat.transpose() << "  lf: " << lhat.transpose() << "  e: " << ef << std::endl;
-  EXPECT_LT(ef, e0);
+//  std::cout << "xf: " << xhat.transpose() << std::endl;
+//  std::cout << "lf: " << lhat.transpose() << std::endl;
+//  std::cout << "ef: " << ef << std::endl << std::endl;
+
+  EXPECT_LE(ef, 0.17);
 }

@@ -2,66 +2,59 @@
 #include "utils/jac.h"
 
 Eigen::MatrixXd calc_jac(std::function<Eigen::MatrixXd(const Eigen::MatrixXd&)> fun, const Eigen::MatrixXd& x,
-                         std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>f_boxminus,
-                         std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>f_boxplus,
-                         std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>f_boxminus2,
-                         std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>f_boxplus2)
+                         std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>x_boxminus,
+                         std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>x_boxplus,
+                         std::function<Eigen::MatrixXd(const Eigen::MatrixXd&, const Eigen::MatrixXd&)>y_boxminus,
+                         double step_size)
 {
-  if (f_boxminus == nullptr)
+  if (x_boxminus == nullptr)
   {
-      f_boxminus = [](const Eigen::MatrixXd& x1, const Eigen::MatrixXd& x2)
+      x_boxminus = [](const Eigen::MatrixXd& x1, const Eigen::MatrixXd& x2)
       {
           return x1 - x2;
       };
   }
-  if (f_boxminus2 == nullptr)
+  if (y_boxminus == nullptr)
   {
-      f_boxminus2 = [](const Eigen::MatrixXd& x1, const Eigen::MatrixXd& x2)
+      y_boxminus = [](const Eigen::MatrixXd& x1, const Eigen::MatrixXd& x2)
       {
           return x1 - x2;
       };
   }
 
-  if (f_boxplus == nullptr)
+  if (x_boxplus == nullptr)
   {
-      f_boxplus = [](const Eigen::MatrixXd& x1, const Eigen::MatrixXd& dx)
-      {
-          return x1 + dx;
-      };
-  }
-  if (f_boxplus2 == nullptr)
-  {
-      f_boxplus2 = [](const Eigen::MatrixXd& x1, const Eigen::MatrixXd& dx)
+      x_boxplus = [](const Eigen::MatrixXd& x1, const Eigen::MatrixXd& dx)
       {
           return x1 + dx;
       };
   }
 
   Eigen::MatrixXd y = fun(x);
-  Eigen::MatrixXd dy = f_boxminus2(y,y);
+  Eigen::MatrixXd dy = y_boxminus(y,y);
   int rows = dy.rows();
 
-  Eigen::MatrixXd dx = f_boxminus(x, x);
+  Eigen::MatrixXd dx = x_boxminus(x, x);
   int cols = dx.rows();
 
   Eigen::MatrixXd I;
   I.resize(cols, cols);
   I.setZero(cols, cols);
   for (int i = 0; i < cols; i++)
-    I(i,i) = 1e-8;
+    I(i,i) = step_size;
 
   Eigen::MatrixXd JFD;
   JFD.setZero(rows, cols);
   for (int i =0; i < cols; i++)
   {
-    Eigen::MatrixXd xp = f_boxplus(x, I.col(i));
-    Eigen::MatrixXd xm = f_boxplus(x, -1.0*I.col(i));
+    Eigen::MatrixXd xp = x_boxplus(x, I.col(i));
+    Eigen::MatrixXd xm = x_boxplus(x, -1.0*I.col(i));
 
     Eigen::MatrixXd yp = fun(xp);
     Eigen::MatrixXd ym = fun(xm);
-    Eigen::MatrixXd dy = f_boxminus2(yp,ym);
+    Eigen::MatrixXd dy = y_boxminus(yp,ym);
 
-    JFD.col(i) = dy/(2*1e-8);
+    JFD.col(i) = dy/(2*step_size);
   }
   return JFD;
 }

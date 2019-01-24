@@ -11,7 +11,7 @@
 using namespace Eigen;
 using namespace std;
 
-TEST (DISABLED_Control, Robot1d_OptimizeTrajectorySingleWindow)
+TEST (Control, Robot1d_OptimizeTrajectorySingleWindow)
 {
   double x0[2] = {0, 0};
   double xf[2] = {1, 0};
@@ -75,7 +75,7 @@ TEST (DISABLED_Control, Robot1d_OptimizeTrajectorySingleWindow)
   input_file.close();
 }
 
-TEST (DISABLED_Control, Robot1d_OptimizeTrajectoryMultiWindow)
+TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
 {
 
   const int W = 8; // Number of windows
