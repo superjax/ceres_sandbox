@@ -48,6 +48,7 @@ add_executable(ceres_tests
     src/imu3d.cpp
     src/time_offset.cpp
     src/camera.cpp
+    src/prange.cpp
 #    src/control.cpp
 )
 target_link_libraries(ceres_tests

@@ -1,5 +1,8 @@
 #include <gtest/gtest.h>
 
+#define DEG2RAD (M_PI / 180.0)
+#define RAD2DEG (180.0 / M_PI)
+
 #define ASSERT_MAT_EQ(v1, v2) \
 { \
     ASSERT_EQ((v1).rows(), (v2).rows()); \
