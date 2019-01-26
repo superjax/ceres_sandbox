@@ -181,10 +181,10 @@ truth_time_offset: 0
 truth_transmission_noise: 0
 truth_transmission_time: 0
 
-## GPS
+## GNSS
 ref_LLA: [0.702443501891, -1.9486196478, 1387.998309] # (rad, rad, m)
-gps_update_rate: 5
-use_gps_truth: false
-gps_horizontal_position_stdev: 1.0
-gps_vertical_position_stdev: 3.0
-gps_velocity_stdev: 0.1
+gnss_update_rate: 5
+use_gnss_truth: false
+gnss_horizontal_position_stdev: 1.0
+gnss_vertical_position_stdev: 3.0
+gnss_velocity_stdev: 0.1

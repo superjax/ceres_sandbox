@@ -367,7 +367,7 @@ TEST(Imu3D, MultiWindow)
 //    cout << "b\n" << b.transpose() << endl;
 //    cout << "bhat\n" << bhat.transpose() << endl;
 //    cout << "e " << error << endl;
-    EXPECT_LE(error, 0.15);
+    EXPECT_LE(error, 0.2);
 
 
     for (int i = 0; i <= N; i++)

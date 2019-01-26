@@ -28,9 +28,9 @@ TEST(Camera, Proj_InvProj)
     cam.proj(pt, pix);
     cam.invProj(pix, depth, pt2);
 
-    EXPECT_NEAR(pt.x(), pt2.x(), 1e-8);
-    EXPECT_NEAR(pt.y(), pt2.y(), 1e-8);
-    EXPECT_NEAR(pt.z(), pt2.z(), 1e-8);
+    EXPECT_NEAR(pt.x(), pt2.x(), 1e-6);
+    EXPECT_NEAR(pt.y(), pt2.y(), 1e-6);
+    EXPECT_NEAR(pt.z(), pt2.z(), 1e-6);
 }
 
 TEST(Camera, Distort_UnDistort)
@@ -189,20 +189,20 @@ TEST (Camera, Intrinsics_Calibration)
     options.max_num_iterations = 100;
     options.num_threads = 6;
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-    options.minimizer_progress_to_stdout = true;
+    options.minimizer_progress_to_stdout = false;
     Solver::Summary summary;
 
-    cout << "fhat0\t" << fhat.transpose() << endl;
-    cout << "chat0\t" << chat.transpose() << endl;
-    cout << "dhat0\t" << dhat.transpose() << endl;
-    cout << "shat0\t" << shat << endl;
+//    cout << "fhat0\t" << fhat.transpose() << endl;
+//    cout << "chat0\t" << chat.transpose() << endl;
+//    cout << "dhat0\t" << dhat.transpose() << endl;
+//    cout << "shat0\t" << shat << endl;
 
     ceres::Solve(options, &problem, &summary);
-    std::cout << summary.FullReport();
+//    std::cout << summary.FullReport();
 
-    cout << "fhatf\t" << fhat.transpose() << " : " << focal_len.transpose() << endl;
-    cout << "chatf\t" << chat.transpose() << " : " << cam_center.transpose() << endl;
-    cout << "dhatf\t" << dhat.transpose() << " : " << distortion.transpose() << endl;
-    cout << "shatf\t" << shat << " : " << s << endl;
+//    cout << "fhatf\t" << fhat.transpose() << " : " << focal_len.transpose() << endl;
+//    cout << "chatf\t" << chat.transpose() << " : " << cam_center.transpose() << endl;
+//    cout << "dhatf\t" << dhat.transpose() << " : " << distortion.transpose() << endl;
+//    cout << "shatf\t" << shat << " : " << s << endl;
 
 }
