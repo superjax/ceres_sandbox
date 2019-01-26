@@ -13,13 +13,12 @@
 #include "test_common.h"
 
 #include "factors/pseudorange.h"
+#include "factors/SE3.h"
 
 
 using namespace multirotor_sim;
-using namespace ceres;
 using namespace Eigen;
 using namespace xform;
-
 
 
 

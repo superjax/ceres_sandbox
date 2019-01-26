@@ -41,7 +41,7 @@ public:
     }
 
     template <typename T>
-    bool operator()(const T* _x, const T* _v, const T* _clk, const T* _x_e2n, T* _res)
+    bool operator()(const T* _x, const T* _v, const T* _clk, const T* _x_e2n, T* _res) const
     {
         typedef Matrix<T,3,1> Vec3;
         typedef Matrix<T,2,1> Vec2;

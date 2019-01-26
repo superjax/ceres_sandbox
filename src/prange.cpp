@@ -13,6 +13,7 @@
 #include "test_common.h"
 
 #include "factors/pseudorange.h"
+#include "factors/SE3.h"
 
 
 using namespace multirotor_sim;
@@ -121,5 +122,78 @@ TEST_F (TestPseudorange, CheckResidualAfterMoving)
     prange_factor(x.data(), v.data(), clk.data(), x_e2n.data(), res.data());
 
     EXPECT_MAT_NEAR(true_res, res, 1e-4);
+}
+
+
+TEST (Pseudorange, PointPositioning)
+{
+    GTime rec_time{2026, 165029.0};
+    Vector3d provo_lla{40.246184 * DEG2RAD , -111.647769 * DEG2RAD, 1387.997511};
+    Vector3d rec_pos = WSG84::lla2ecef(provo_lla);
+    Vector3d rec_vel{1, 2, 3};
+    Xformd x_e2n = WSG84::x_ecef2ned(rec_pos);
+
+    std::vector<Satellite> sats;
+    for (int i = 0; i < 100; i++)
+    {
+        Satellite sat(i);
+        sat.readFromRawFile("../lib/multirotor_sim/sample/eph.dat");
+        if (sat.eph_.A > 0)
+        {
+            sats.push_back(sat);
+        }
+    }
+
+    ceres::Problem problem;
+    Xformd xhat = Xformd::Identity();
+    xhat.t().x() -= 1000;
+    Vector3d vhat{2.0, 1.0, -3.0};
+    Vector2d clk_bias_hat{0.0, 0.0};
+    problem.AddParameterBlock(xhat.data(), 7, new XformAutoDiffParameterization);
+    problem.AddParameterBlock(x_e2n.data(), 7, new XformAutoDiffParameterization);
+    problem.AddParameterBlock(vhat.data(), 3);
+    problem.AddParameterBlock(clk_bias_hat.data(), 2);
+    problem.SetParameterBlockConstant(x_e2n.data());
+
+    std::vector<Satellite>::iterator sat;
+    for (sat = sats.begin(); sat != sats.end(); sat++)
+    {
+        Vector3d meas;
+        Matrix2d cov = Vector2d{0.1, 0.1}.asDiagonal();
+        sat->computeMeasurement(rec_time, rec_pos, rec_vel, meas);
+        problem.AddResidualBlock(new PRangeAD(
+                                     new PseudorangeCostFunction(rec_time, meas.topRows<2>(), *sat, rec_pos, cov)),
+                                 NULL, xhat.data(), vhat.data(), clk_bias_hat.data(), x_e2n.data());
+    }
+
+
+    ceres::Solver::Options options;
+    options.max_num_iterations = 100;
+    options.num_threads = 6;
+    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.minimizer_progress_to_stdout = false;
+    ceres::Solver::Summary summary;
+
+//    cout << "xhat0\n" << xhat << endl;
+//    cout << "vhat0\n" << vhat.transpose() << endl;
+//    cout << "dthat0\n" << clk_bias_hat.transpose() << endl;
+
+    ceres::Solve(options, &problem, &summary);
+
+//    cout << "xhatf\n" << xhat << endl;
+//    cout << "vhatf\n" << vhat.transpose() << endl;
+//    cout << "dthatf\n" << clk_bias_hat.transpose() << endl;
+
+    double xerror = xhat.t().norm();
+    double verror = (vhat - rec_vel).norm();
+    double dterror = (clk_bias_hat).norm();
+
+//    cout << "xerror: " << xerror << endl;
+//    cout << "verror: " << verror << endl;
+//    cout << "dterror: " << dterror << endl;
+
+    EXPECT_NEAR(xerror, 0.0, 1e-2);
+    EXPECT_NEAR(verror, 0.0, 4.0); ///TODO: Figure out why this is so large
+    EXPECT_NEAR(dterror, 0.0, 1e-8);
 }
 
