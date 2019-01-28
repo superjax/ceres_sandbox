@@ -133,6 +133,7 @@ pos_enabled: true
 vo_enabled: true
 features_enabled: true
 gnss_enabled: true
+raw_gnss_enabled: true
 
 ## IMU
 imu_update_rate: 250
@@ -188,3 +189,15 @@ use_gnss_truth: false
 gnss_horizontal_position_stdev: 1.0
 gnss_vertical_position_stdev: 3.0
 gnss_velocity_stdev: 0.1
+
+## Raw GNSS
+use_raw_gnss_truth: false
+pseudorange_stdev: 1.0
+pseudorange_rate_stdev: 0.01
+carrier_phase_stdev: 0.01
+ephemeris_filename: "../lib/multirotor_sim/sample/eph.dat"
+start_time_week: 2026
+start_time_tow_sec: 165029
+clock_init_stdev: 1e-4
+clock_walk_stdev: 1e-7
+

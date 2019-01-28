@@ -26,7 +26,7 @@ TEST (Pseudorange, TestCompile)
 {
     GTime t;
     Vector2d rho;
-    Satellite sat(1);
+    Satellite sat(1, 0);
     Vector3d rec_pos;
     Matrix2d cov;
     PseudorangeCostFunction prange_factor(t, rho, sat, rec_pos, cov);
@@ -36,7 +36,7 @@ class TestPseudorange : public ::testing::Test
 {
 protected:
   TestPseudorange() :
-    sat(1)
+    sat(1, 0)
   {}
   void SetUp() override
     {
@@ -130,13 +130,14 @@ TEST (Pseudorange, PointPositioning)
     GTime rec_time{2026, 165029.0};
     Vector3d provo_lla{40.246184 * DEG2RAD , -111.647769 * DEG2RAD, 1387.997511};
     Vector3d rec_pos = WSG84::lla2ecef(provo_lla);
-    Vector3d rec_vel{1, 2, 3};
+    Vector3d rec_vel_NED{1, 2, 3};
     Xformd x_e2n = WSG84::x_ecef2ned(rec_pos);
+    Vector3d rec_vel_ECEF = x_e2n.q().rota(rec_vel_NED);
 
     std::vector<Satellite> sats;
     for (int i = 0; i < 100; i++)
     {
-        Satellite sat(i);
+        Satellite sat(i, sats.size());
         sat.readFromRawFile("../lib/multirotor_sim/sample/eph.dat");
         if (sat.eph_.A > 0)
         {
@@ -147,7 +148,7 @@ TEST (Pseudorange, PointPositioning)
     ceres::Problem problem;
     Xformd xhat = Xformd::Identity();
     xhat.t().x() -= 1000;
-    Vector3d vhat{2.0, 1.0, -3.0};
+    Vector3d vhat = Vector3d::Zero();
     Vector2d clk_bias_hat{0.0, 0.0};
     problem.AddParameterBlock(xhat.data(), 7, new XformAutoDiffParameterization);
     problem.AddParameterBlock(x_e2n.data(), 7, new XformAutoDiffParameterization);
@@ -160,7 +161,7 @@ TEST (Pseudorange, PointPositioning)
     {
         Vector3d meas;
         Matrix2d cov = Vector2d{0.1, 0.1}.asDiagonal();
-        sat->computeMeasurement(rec_time, rec_pos, rec_vel, meas);
+        sat->computeMeasurement(rec_time, rec_pos, rec_vel_ECEF, meas);
         problem.AddResidualBlock(new PRangeAD(
                                      new PseudorangeCostFunction(rec_time, meas.topRows<2>(), *sat, rec_pos, cov)),
                                  NULL, xhat.data(), vhat.data(), clk_bias_hat.data(), x_e2n.data());
@@ -185,7 +186,7 @@ TEST (Pseudorange, PointPositioning)
 //    cout << "dthatf\n" << clk_bias_hat.transpose() << endl;
 
     double xerror = xhat.t().norm();
-    double verror = (vhat - rec_vel).norm();
+    double verror = (vhat - rec_vel_NED).norm();
     double dterror = (clk_bias_hat).norm();
 
 //    cout << "xerror: " << xerror << endl;
@@ -193,7 +194,7 @@ TEST (Pseudorange, PointPositioning)
 //    cout << "dterror: " << dterror << endl;
 
     EXPECT_NEAR(xerror, 0.0, 1e-2);
-    EXPECT_NEAR(verror, 0.0, 4.0); ///TODO: Figure out why this is so large
+    EXPECT_NEAR(verror, 0.0, 1e-2); ///TODO: Figure out why this is so large
     EXPECT_NEAR(dterror, 0.0, 1e-8);
 }
 

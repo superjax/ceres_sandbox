@@ -21,7 +21,7 @@ public:
     inline void voCallback(const double& t, const Xformd& z, const Matrix6d& R) override { if (vo_cb_) vo_cb_(t, z, R); }
     inline void featCallback(const double& t, const Vector2d& z, const Matrix2d& R, int id, double depth) override { if (feat_cb_) feat_cb_(t, z, R, id, depth); }
     inline void gnssCallback(const double& t, const Vector6d& z, const Matrix6d& R) override { if (gnss_cb_) gnss_cb_(t, z, R); }
-    inline void rawGnssCallback(const GTime& t, const Vector3d& z, const Matrix3d& R, int id) override { if (raw_gnss_cb_) raw_gnss_cb_(t, z, R, id); }
+    inline void rawGnssCallback(const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat) override { if (raw_gnss_cb_) raw_gnss_cb_(t, z, R, sat); }
 
     std::function<void(const double& t, const Vector6d& z, const Matrix6d& R)> imu_cb_;
     std::function<void(const double& t, const Vector1d& z, const Matrix1d& R)> alt_cb_;
@@ -30,7 +30,7 @@ public:
     std::function<void(const double& t, const Xformd& z, const Matrix6d& R)> vo_cb_;
     std::function<void(const double& t, const Vector2d& z, const Matrix2d& R, int id, double depth)> feat_cb_;
     std::function<void(const double& t, const Vector6d& z, const Matrix6d& R)> gnss_cb_;
-    std::function<void(const GTime& t, const Vector3d& z, const Matrix3d& R, int id)> raw_gnss_cb_;
+    std::function<void(const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat)> raw_gnss_cb_;
 
     inline void register_imu_cb(std::function<void(const double& t, const Vector6d& z, const Matrix6d& R)> imu_cb) {imu_cb_ = imu_cb;}
     inline void register_alt_cb(std::function<void(const double& t, const Vector1d& z, const Matrix1d& R)> alt_cb) {alt_cb_ = alt_cb;}
@@ -39,5 +39,5 @@ public:
     inline void register_vo_cb(std::function<void(const double& t, const Xformd& z, const Matrix6d& R)> vo_cb) {vo_cb_ = vo_cb;}
     inline void register_feat_cb(std::function<void(const double& t, const Vector2d& z, const Matrix2d& R, int id, double depth)> feat_cb) {feat_cb_ = feat_cb;}
     inline void register_gnss_cb(std::function<void(const double& t, const Vector6d& z, const Matrix6d& R)> gnss_cb) {gnss_cb_ = gnss_cb;}
-    inline void register_raw_gnss_cb(std::function<void(const GTime& t, const Vector3d& z, const Matrix3d& R, int id)> raw_gnss_cb) {raw_gnss_cb_ = raw_gnss_cb;}
+    inline void register_raw_gnss_cb(std::function<void(const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat)> raw_gnss_cb) {raw_gnss_cb_ = raw_gnss_cb;}
 };

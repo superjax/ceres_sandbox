@@ -48,23 +48,21 @@ public:
 
 
         Xform<T> x(_x);
-        Map<const Vec3> v_NED(_v);
+        Map<const Vec3> v_b(_v);
         Map<const Vec2> clk(_clk);
         Xform<T> x_e2n(_x_e2n);
         Map<Vec2> res(_res);
 
 
-        Vec3 v_ECEF = x.q().rota(v_NED);
+        Vec3 v_ECEF = x_e2n.q().rota(x.q().rota(v_b));
         Vec3 p_ECEF = x_e2n.transforma(x.t());
         Vec3 los_to_sat = sat_pos - p_ECEF;
 
         Vec2 rho_hat;
         rho_hat(0) = los_to_sat.norm() + ion_delay - (T)Satellite::C_LIGHT*(sat_clk_bias(0) + clk(0));
-        rho_hat(1) = (sat_vel - v_ECEF).dot(los_to_sat / rho_hat(0)) - (T)Satellite::C_LIGHT*(sat_clk_bias(1) + clk(1));
+        rho_hat(1) = (sat_vel - v_ECEF).dot(los_to_sat.normalized()) - (T)Satellite::C_LIGHT*(sat_clk_bias(1) + clk(1));
 
-        res = rho - rho_hat;
-
-        res = Xi_ * res;
+        res = Xi_ * (rho - rho_hat);
 
         /// TODO: Check if time or rec_pos have deviated too much and re-calculate ion_delay and earth rotation effect
 
