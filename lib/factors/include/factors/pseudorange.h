@@ -59,8 +59,8 @@ public:
         Vec3 los_to_sat = sat_pos - p_ECEF;
 
         Vec2 rho_hat;
-        rho_hat(0) = los_to_sat.norm() + ion_delay - (T)Satellite::C_LIGHT*(sat_clk_bias(0) + clk(0));
-        rho_hat(1) = (sat_vel - v_ECEF).dot(los_to_sat.normalized()) - (T)Satellite::C_LIGHT*(sat_clk_bias(1) + clk(1));
+        rho_hat(0) = los_to_sat.norm() + ion_delay + (T)Satellite::C_LIGHT*(clk(0)- sat_clk_bias(0));
+        rho_hat(1) = (sat_vel - v_ECEF).dot(los_to_sat.normalized()) + (T)Satellite::C_LIGHT*(clk(1) - sat_clk_bias(1));
 
         res = Xi_ * (rho - rho_hat);
 
