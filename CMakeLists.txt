@@ -50,6 +50,7 @@ add_executable(ceres_tests
     src/camera.cpp
     src/prange.cpp
     src/control.cpp
+    src/carrier_phase.cpp
 )
 target_link_libraries(ceres_tests
     utils

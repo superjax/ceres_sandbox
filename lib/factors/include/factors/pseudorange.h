@@ -13,7 +13,7 @@ class PRangeFunctor
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    PRangeFunctor(const GTime& _t, const Vector2d& _rho, Satellite& sat, const Vector3d& _rec_pos_ecef, const Matrix2d& cov)
+    PRangeFunctor(const GTime& _t, const Vector2d& _rho, const Satellite& sat, const Vector3d& _rec_pos_ecef, const Matrix2d& cov)
     {
         // We don't have ephemeris for this satellite, we can't do anything with it yet
         if (sat.eph_.A == 0)
