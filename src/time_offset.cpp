@@ -273,7 +273,7 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = false;
     Solver::Summary summary;
-    Logger<double> log("../logs/TimeOffset.MultiWindowConstantBias.log");
+    Logger<double> log("/tmp/ceres_sandbox/TimeOffset.MultiWindowConstantBias.log");
 
     MatrixXd xhat0 = xhat;
     MatrixXd vhat0 = vhat;

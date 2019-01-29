@@ -1,9 +1,9 @@
 format compact
 set(0,'DefaultFigureWindowStyle','docked')
 
-truth_file = fopen('../build/Imu3d.MultiWindow.truth.log', 'r');
-est_file = fopen('../build/Imu3d.MultiWindow.est.log', 'r');
-est0_file = fopen('../build/Imu3d.MultiWindow.est0.log', 'r');
+truth_file = fopen('/tmp/ceres_sandbox/Imu3d.MultiWindow.truth.log', 'r');
+est_file = fopen('/tmp/ceres_sandbox/Imu3d.MultiWindow.est.log', 'r');
+est0_file = fopen('/tmp/ceres_sandbox/Imu3d.MultiWindow.est0.log', 'r');
 
 truth = fread(truth_file, 'double');
 truth = reshape(truth, 11, []);

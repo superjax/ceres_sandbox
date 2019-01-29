@@ -1,9 +1,9 @@
 format compact
 set(0,'DefaultFigureWindowStyle','docked')
 
-state_file = fopen('../build/1d_trajectory_multi_states.bin', 'r');
-init_file = fopen('../build/1d_trajectory_multi_states_init.bin', 'r');
-input_file = fopen('../build/1d_trajectory_multi_input.bin', 'r');
+state_file = fopen('/tmp/ceres_sandbox/1d_trajectory_multi_states.bin', 'r');
+init_file = fopen('/tmp/ceres_sandbox/1d_trajectory_multi_states_init.bin', 'r');
+input_file = fopen('/tmp/ceres_sandbox/1d_trajectory_multi_input.bin', 'r');
 
 x = reshape(fread(state_file, 'double'), 2, []);
 x0 = reshape(fread(init_file, 'double'), 2, []);

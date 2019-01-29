@@ -1,7 +1,7 @@
 format compact
 set(0,'DefaultFigureWindowStyle','docked')
 
-file = fopen('../logs/Imu3D.CheckPropagation.log', 'r');
+file = fopen('/tmp/ceres_sandbox/Imu3D.CheckPropagation.log', 'r');
 
 data = fread(file, 'double');
 data = reshape(data, 1+7+3+7+3+6 + 4, [])';

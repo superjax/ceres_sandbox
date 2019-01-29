@@ -120,7 +120,7 @@ TEST(Pseudorange, Trajectory)
 
     ceres::Solve(options, &problem, &summary);
 
-    Logger<double> log("../logs/Pseudorange.Trajectory.log");
+    Logger<double> log("/tmp/ceres_sandbox/Pseudorange.Trajectory.log");
 
     for (int i = 0; i < N; i++)
     {

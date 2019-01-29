@@ -9,7 +9,7 @@ pw = plotWindow()
 
 LOG_WIDTH = 1 + 7 + 3 + 7 + 3 + 7 + 3
 
-data = np.reshape(np.fromfile('../logs/Pseudorange.Trajectory.log', dtype=np.float64), (-1, LOG_WIDTH))
+data = np.reshape(np.fromfile('/tmp/ceres_sandbox/Pseudorange.Trajectory.log', dtype=np.float64), (-1, LOG_WIDTH))
 
 t = data[:,0]
 xhat0 = data[:,1:8]

@@ -8,7 +8,7 @@ plt.rc('text', usetex=True)
 plt.rc('font', family='serif')
 pw = plotWindow()
 
-data = np.reshape(np.fromfile('../build/Imu3D.CheckPropagation.log', dtype=np.float64), (-1,27))
+data = np.reshape(np.fromfile('/tmp/ceres_sandbox/Imu3D.CheckPropagation.log', dtype=np.float64), (-1,27))
 
 t = data[:, 0]
 xhat = data[:, 1:11]

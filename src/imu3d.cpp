@@ -56,7 +56,7 @@ TEST(Imu3D, Propagation)
     Xformd x0 = multirotor.get_pose();
     Vector3d v0 = multirotor.get_vel();
 
-    Logger<double> log("../logs/Imu3D.CheckPropagation.log");
+    Logger<double> log("/tmp/ceres_sandbox/Imu3D.CheckPropagation.log");
 
     Xformd xhat = multirotor.get_pose();
     Vector3d vhat = multirotor.get_vel();
@@ -116,7 +116,7 @@ TEST(Imu3D, ErrorStateDynamics)
     std::default_random_engine gen;
     std::normal_distribution<double> normal;
 
-    Logger<double> log("../logs/Imu3d.CheckDynamics.log");
+    Logger<double> log("/tmp/ceres_sandbox/Imu3d.CheckDynamics.log");
 
 
     Matrix6d cov = Matrix6d::Identity() * 1e-3;
@@ -350,7 +350,7 @@ TEST(Imu3D, MultiWindow)
     options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
     options.minimizer_progress_to_stdout = false;
     Solver::Summary summary;
-    Logger<double> log("../logs/Imu3d.MultiWindow.log");
+    Logger<double> log("/tmp/ceres_sandbox/Imu3d.MultiWindow.log");
 
     MatrixXd xhat0 = xhat;
     MatrixXd vhat0 = vhat;
