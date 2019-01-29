@@ -46,7 +46,7 @@ TEST(Imu1D, 1DRobotSingleWindow)
   problem.AddParameterBlock(xhat.data(), 2);
   problem.SetParameterBlockConstant(xhat.data());
 
-  Imu1DFactorCostFunction *IMUFactor = new Imu1DFactorCostFunction(Robot.t_, bahat, Q);
+  Imu1DFunctor *IMUFactor = new Imu1DFunctor(Robot.t_, bahat, Q);
   while (Robot.t_ < window_size*dt)
   {
     Robot.step(dt);
@@ -63,12 +63,12 @@ TEST(Imu1D, 1DRobotSingleWindow)
 
   // Add preintegrated IMU
   problem.AddParameterBlock(xhat.data()+2, 2);
-  problem.AddResidualBlock(new Imu1DFactorAutoDiff(IMUFactor), NULL, xhat.data(), xhat.data()+2, &bahat);
+  problem.AddResidualBlock(new Imu1DFactorAD(IMUFactor), NULL, xhat.data(), xhat.data()+2, &bahat);
 
   // Add measurement of final pose
   Vector2d zj = x.col(1);
   Matrix2d pose_cov = (Matrix2d() << 1e-8, 0, 0, 1e-8).finished();
-  problem.AddResidualBlock(new Pose1DConstraint(zj, pose_cov), NULL, xhat.data()+2);
+  problem.AddResidualBlock(new Pose1DFactor(zj, pose_cov), NULL, xhat.data()+2);
 
 
   Solver::Options options;
@@ -123,7 +123,7 @@ TEST(Imu1D, 1DRobotLocalization)
 
   for (int i = 1; i < num_windows; i++)
   {
-    Imu1DFactorCostFunction *IMUFactor = new Imu1DFactorCostFunction(Robot.t_, bahat, Q);
+    Imu1DFunctor *IMUFactor = new Imu1DFunctor(Robot.t_, bahat, Q);
     while (Robot.t_ < i*window_size*dt)
     {
       Robot.step(dt);
@@ -140,13 +140,13 @@ TEST(Imu1D, 1DRobotLocalization)
 
     // Add preintegrated IMU
     problem.AddParameterBlock(xhat.data()+2*i, 2);
-    problem.AddResidualBlock(new Imu1DFactorAutoDiff(IMUFactor), NULL, xhat.data()+2*(i-1), xhat.data()+2*i, &bahat);
+    problem.AddResidualBlock(new Imu1DFactorAD(IMUFactor), NULL, xhat.data()+2*(i-1), xhat.data()+2*i, &bahat);
   }
 
   // Add measurement of final pose
   Vector2d zj = x.col(num_windows-1);
   Matrix2d pose_cov = (Matrix2d() << 1e-8, 0, 0, 1e-8).finished();
-  problem.AddResidualBlock(new Pose1DConstraint(zj, pose_cov), NULL, xhat.data()+2*(num_windows-1));
+  problem.AddResidualBlock(new Pose1DFactor(zj, pose_cov), NULL, xhat.data()+2*(num_windows-1));
 
 
   Solver::Options options;
@@ -209,7 +209,7 @@ TEST(Imu1D, 1DRobotSLAM)
 
   for (int win = 1; win < num_windows; win++)
   {
-    Imu1DFactorCostFunction *IMUFactor = new Imu1DFactorCostFunction(Robot.t_, bahat, Q);
+    Imu1DFunctor *IMUFactor = new Imu1DFunctor(Robot.t_, bahat, Q);
     while (Robot.t_ < win*window_size*dt)
     {
       Robot.step(dt);
@@ -226,13 +226,13 @@ TEST(Imu1D, 1DRobotSLAM)
 
     // Add preintegrated IMU
     problem.AddParameterBlock(xhat.data()+2*win, 2);
-    problem.AddResidualBlock(new Imu1DFactorAutoDiff(IMUFactor), NULL, xhat.data()+2*(win-1), xhat.data()+2*win, &bahat);
+    problem.AddResidualBlock(new Imu1DFactorAD(IMUFactor), NULL, xhat.data()+2*(win-1), xhat.data()+2*win, &bahat);
 
     // Add landmark measurements
     for (int l = 0; l < landmarks.size(); l++)
     {
       double rbar = (landmarks[l] - Robot.x_) + normal(gen)*std::sqrt(rvar);
-      problem.AddResidualBlock(new Range1dFactorVelocity(rbar, rvar), NULL, lhat.data()+l, xhat.data()+2*win);
+      problem.AddResidualBlock(new RangeVel1DFactor(rbar, rvar), NULL, lhat.data()+l, xhat.data()+2*win);
     }
   }
 

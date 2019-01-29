@@ -25,7 +25,7 @@ TEST(Position3D, AveragePoints)
     sample *= 5e-2;
     sample += x;
     mean += sample;
-    problem.AddResidualBlock(new Position3dFactor(sample.data()), NULL, xhat.data());
+    problem.AddResidualBlock(new Pos3DFactor(sample.data()), NULL, xhat.data());
   }
   mean /= numObs;
 

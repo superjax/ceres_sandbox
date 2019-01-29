@@ -18,12 +18,12 @@ struct QuatPlus {
     return true;
   }
 };
-typedef ceres::AutoDiffLocalParameterization<QuatPlus, 4, 3> QuatAutoDiffParameterization;
+typedef ceres::AutoDiffLocalParameterization<QuatPlus, 4, 3> QuatADParam;
 
-class QuatParameterization : public ceres::LocalParameterization
+class QuatParam : public ceres::LocalParameterization
 {
 public:
-  ~QuatParameterization() {}
+  ~QuatParam() {}
   bool Plus(const double* x,
             const double* delta,
             double* x_plus_delta) const
@@ -101,10 +101,10 @@ private:
   quat::Quat<double> quat_;
 };
 
-class QuatFactorCostFunction
+class QuatFunctor
 {
 public:
-  QuatFactorCostFunction(double *x)
+  QuatFunctor(double *x)
   {
     q_ = Quatd(x);
   }
@@ -121,4 +121,4 @@ public:
 private:
   quat::Quat<double> q_;
 };
-typedef ceres::AutoDiffCostFunction<QuatFactorCostFunction, 3, 4> QuatFactorAutoDiff;
+typedef ceres::AutoDiffCostFunction<QuatFunctor, 3, 4> QuatFactorAD;

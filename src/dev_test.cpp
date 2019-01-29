@@ -54,12 +54,14 @@ TEST(Pseudorange, Trajectory)
     for (int i = 0; i < N; i++)
     {
         xhat.col(i) = Xformd::Identity().elements();
-        problem.AddParameterBlock(xhat.data() + i*7, 7, new XformAutoDiffParameterization());
+        problem.AddParameterBlock(xhat.data() + i*7, 7, new XformParamAD());
         vhat.setZero();
         problem.AddParameterBlock(vhat.data() + i*3, 3);
     }
     clk_bias_hat.setZero();
     problem.AddParameterBlock(clk_bias_hat.data(), 2);
+    problem.AddParameterBlock(x_e2n_hat.data(), 7, new XformParamAD());
+    problem.SetParameterBlockConstant(x_e2n_hat.data());
 
     bool new_node = false;
     auto raw_gnss_cb = [&measurements, &new_node, &cov, &gtimes]
@@ -84,7 +86,7 @@ TEST(Pseudorange, Trajectory)
             new_node = false;
             for (int i = 0; i < measurements.size(); i++)
             {
-                problem.AddResidualBlock(new PRangeAD(new PseudorangeCostFunction(gtimes[i],
+                problem.AddResidualBlock(new PRangeFactorAD(new PRangeFunctor(gtimes[i],
                                                                                   measurements[i],
                                                                                   sim.satellites_[i],
                                                                                   sim.get_position_ecef(),
@@ -95,10 +97,8 @@ TEST(Pseudorange, Trajectory)
                                                       clk_bias_hat.data(),
                                                       x_e2n_hat.data());
             }
-            xhat.col(n) = (sim.dyn_.get_state().X + randomNormal<double, 6, 1>(normal, rng)).elements();
-            vhat.col(n) = sim.dyn_.get_state().v + randomNormal<double, 3, 1>(normal, rng);
             x.col(n) = sim.dyn_.get_state().X.elements();
-            v.col(n) = sim.dyn_.get_state().v;
+            v.col(n) = sim.dyn_.get_state().q.rota(sim.dyn_.get_state().v);
             t.push_back(sim.t_);
             n++;
 

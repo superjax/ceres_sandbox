@@ -26,12 +26,12 @@ using namespace multirotor_sim;
 
 TEST(Imu3D, compile)
 {
-    Imu3DFactorCostFunction imu;
+    Imu3DFunctor imu;
 }
 
 TEST(Imu3D, reset)
 {
-    Imu3DFactorCostFunction imu;
+    Imu3DFunctor imu;
     Vector6d b0;
     b0 << 0, 1, 2, 3, 4, 5;
     imu.reset(0, b0);
@@ -45,7 +45,7 @@ TEST(Imu3D, Propagation)
     multirotor.load("../params/sim_params.yaml");
 
 
-    typedef Imu3DFactorCostFunction IMU;
+    typedef Imu3DFunctor IMU;
     IMU imu;
     Vector6d b0;
     b0.setZero();
@@ -90,7 +90,7 @@ TEST(Imu3D, Propagation)
 
 TEST(Imu3D, ErrorStateDynamics)
 {
-    typedef Imu3DFactorCostFunction IMU;
+    typedef Imu3DFunctor IMU;
     IMU y;
     IMU yhat;
     Vector9d dy;
@@ -164,14 +164,14 @@ TEST(Imu3D, DynamicsJacobians)
         eta0.setZero();
         dy0.setZero();
 
-        Imu3DFactorCostFunction f;
+        Imu3DFunctor f;
         f.reset(0, b0);
         f.dynamics(y0, u0, ydot, A, B);
         Vector9d dy0;
 
         auto yfun = [&y0, &cov, &b0, &u0, &eta0](const Vector9d& dy)
         {
-            Imu3DFactorCostFunction f;
+            Imu3DFunctor f;
             f.reset(0, b0);
             Vector9d dydot;
             f.errorStateDynamics(y0, dy, u0, eta0, dydot);
@@ -179,7 +179,7 @@ TEST(Imu3D, DynamicsJacobians)
         };
         auto etafun = [&y0, &cov, &b0, &dy0, &u0](const Vector6d& eta)
         {
-            Imu3DFactorCostFunction f;
+            Imu3DFunctor f;
             f.reset(0, b0);
             Vector9d dydot;
             f.errorStateDynamics(y0, dy0, u0, eta, dydot);
@@ -202,7 +202,7 @@ TEST(Imu3D, BiasJacobians)
     ReferenceController cont;
     cont.load("../params/sim_params.yaml");
     Simulator multirotor(cont, cont, false);
-    multirotor.load("../lib/multirotor_sim/params/sim_params.yaml");
+    multirotor.load("../params/sim_params.yaml");
     std::vector<Vector6d,Eigen::aligned_allocator<Vector6d>> meas;
     std::vector<double> t;
     multirotor.dt_ = 0.001;
@@ -219,7 +219,7 @@ TEST(Imu3D, BiasJacobians)
     Eigen::Matrix<double, 9, 6> J, JFD;
 
     b0.setZero();
-    Imu3DFactorCostFunction f;
+    Imu3DFunctor f;
     f.reset(0, b0);
     Vector10d y0 = f.y_;
     for (int i = 0; i < meas.size(); i++)
@@ -230,7 +230,7 @@ TEST(Imu3D, BiasJacobians)
 
     auto fun = [&cov, &meas, &t, &y0](const Vector6d& b0)
     {
-        Imu3DFactorCostFunction f;
+        Imu3DFunctor f;
         f.reset(0, b0);
         for (int i = 0; i < meas.size(); i++)
         {
@@ -241,7 +241,7 @@ TEST(Imu3D, BiasJacobians)
     auto bm = [](const MatrixXd& x1, const MatrixXd& x2)
     {
         Vector9d dx;
-        Imu3DFactorCostFunction::boxminus(x1, x2, dx);
+        Imu3DFunctor::boxminus(x1, x2, dx);
         return dx;
     };
 
@@ -284,17 +284,17 @@ TEST(Imu3D, MultiWindow)
 
     for (int n = 0; n < N; n++)
     {
-        problem.AddParameterBlock(xhat.data()+7*n, 7, new XformAutoDiffParameterization());
+        problem.AddParameterBlock(xhat.data()+7*n, 7, new XformParamAD());
         problem.AddParameterBlock(vhat.data()+3*n, 3);
     }
     problem.AddParameterBlock(bhat.data(), 6);
 
 
-    std::vector<Imu3DFactorCostFunction*> factors;
-    factors.push_back(new Imu3DFactorCostFunction(0, bhat));
+    std::vector<Imu3DFunctor*> factors;
+    factors.push_back(new Imu3DFunctor(0, bhat));
 
     int node = 0;
-    Imu3DFactorCostFunction* factor = factors[node];
+    Imu3DFunctor* factor = factors[node];
     auto imu_cb = [&factor](const double& t, const Vector6d& z, const Matrix6d& R)
     {
         factor->integrate(t, z, R);
@@ -311,7 +311,7 @@ TEST(Imu3D, MultiWindow)
     double node_dt = 1.0;
     double next_node = node_dt;
     Matrix6d P = Matrix6d::Identity() * 0.1;
-    problem.AddResidualBlock(new XformNodeFactorAutoDiff(new XformNodeFactorCostFunction(multirotor.get_pose().arr_, P)), NULL, xhat.data());
+    problem.AddResidualBlock(new XformNodeFactorAD(new XformNodeFunctor(multirotor.get_pose().arr_, P)), NULL, xhat.data());
     while (node < N)
     {
         multirotor.run();
@@ -332,15 +332,15 @@ TEST(Imu3D, MultiWindow)
             v.col(node) = multirotor.dyn_.get_state().v;
 
             // Add IMU factor to graph
-            problem.AddResidualBlock(new Imu3DFactorAutoDiff(factor), NULL,
+            problem.AddResidualBlock(new Imu3DFactorAD(factor), NULL,
                                      xhat.data()+7*(node-1), xhat.data()+7*node,
                                      vhat.data()+3*(node-1), vhat.data()+3*node,
                                      bhat.data());
 
             // Start a new Factor
-            factors.push_back(new Imu3DFactorCostFunction(multirotor.t_, bhat));
+            factors.push_back(new Imu3DFunctor(multirotor.t_, bhat));
             factor = factors[node];
-            problem.AddResidualBlock(new XformNodeFactorAutoDiff(new XformNodeFactorCostFunction(multirotor.get_pose().arr_, P)), NULL, xhat.data()+7*(node));
+            problem.AddResidualBlock(new XformNodeFactorAD(new XformNodeFunctor(multirotor.get_pose().arr_, P)), NULL, xhat.data()+7*(node));
         }
     }
 

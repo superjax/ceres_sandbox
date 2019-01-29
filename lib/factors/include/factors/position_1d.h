@@ -5,10 +5,10 @@
 #include <Eigen/Dense>
 
 
-class Position1dFactor : public ceres::SizedCostFunction<1,1>
+class Pos1DFactor : public ceres::SizedCostFunction<1,1>
 {
 public:
-  Position1dFactor(double x) :
+  Pos1DFactor(double x) :
     position(x)
   {}
 
@@ -28,10 +28,10 @@ protected:
   double position;
 };
 
-class Position1dFactorWithTimeOffset : public ceres::SizedCostFunction<1,2,1>
+class Pos1DTimeOffsetFactor : public ceres::SizedCostFunction<1,2,1>
 {
 public:
-  Position1dFactorWithTimeOffset(double x, double cov) :
+  Pos1DTimeOffsetFactor(double x, double cov) :
     xbar_(x), cov_(cov)
   {}
 

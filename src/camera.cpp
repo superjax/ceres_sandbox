@@ -2,7 +2,8 @@
 #include <ceres/ceres.h>
 
 #include "geometry/xform.h"
-#include "utils/cam.h"
+#include "geometry/cam.h"
+#include "utils/jac.h"
 #include "factors/camera.h"
 #include "factors/SE3.h"
 #include "multirotor_sim/utils.h"
@@ -144,8 +145,6 @@ TEST (Camera, Intrinsics_Calibration)
     Vector2d fhat = focal_len + Vector2d::Random()*25;
     Vector2d chat = cam_center + Vector2d::Random()*25;
     Vector5d dhat = distortion + Vector5d::Random()*1e-3;
-//    Vector5d dhat = Vector5d::Random()*1e-3;
-//    Vector5d dhat = Vector5d::Zero();
     double shat = s + (rand() % 1000)*1e-6;
 
     MatrixXd xhat = camera_pose;
@@ -163,7 +162,7 @@ TEST (Camera, Intrinsics_Calibration)
     }
     for (int i = 0; i < 9; i++)
     {
-        problem.AddParameterBlock(xhat.data()+7*i, 7, new XformAutoDiffParameterization());
+        problem.AddParameterBlock(xhat.data()+7*i, 7, new XformParamAD());
         problem.SetParameterBlockConstant(xhat.data()+7*i);
     }
 
@@ -178,7 +177,7 @@ TEST (Camera, Intrinsics_Calibration)
 
             if (cam.check(pix))
             {
-                problem.AddResidualBlock(new CameraAutoDiff(new CameraFactorCostFunction(pix, cov, cam.image_size_)),
+                problem.AddResidualBlock(new CamFactorAD(new CamFunctor(pix, cov, cam.image_size_)),
                                          NULL, lhat.data()+3*j, xhat.data()+7*i, fhat.data(), chat.data(), &shat,
                                          dhat.data());
             }

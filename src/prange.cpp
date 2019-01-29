@@ -10,6 +10,7 @@
 #include "multirotor_sim/controller.h"
 #include "multirotor_sim/satellite.h"
 #include "utils/estimator_wrapper.h"
+#include "utils/logger.h"
 #include "test_common.h"
 
 #include "factors/pseudorange.h"
@@ -29,7 +30,7 @@ TEST (Pseudorange, TestCompile)
     Satellite sat(1, 0);
     Vector3d rec_pos;
     Matrix2d cov;
-    PseudorangeCostFunction prange_factor(t, rho, sat, rec_pos, cov);
+    PRangeFunctor prange_factor(t, rho, sat, rec_pos, cov);
 }
 
 class TestPseudorange : public ::testing::Test
@@ -82,7 +83,7 @@ TEST_F (TestPseudorange, CheckResidualAtInit)
     rho = z.topRows<2>();
     Matrix2d cov = (Vector2d{3.0, 0.4}).asDiagonal();
 
-    PseudorangeCostFunction prange_factor(time, rho, sat, rec_pos, cov);
+    PRangeFunctor prange_factor(time, rho, sat, rec_pos, cov);
 
     Xformd x = Xformd::Identity();
     Vector3d v = Vector3d::Zero();
@@ -106,7 +107,7 @@ TEST_F (TestPseudorange, CheckResidualAfterMoving)
     rho = z.topRows<2>();
     Matrix2d cov = (Vector2d{3.0, 0.4}).asDiagonal();
 
-    PseudorangeCostFunction prange_factor(time, rho, sat, rec_pos, cov);
+    PRangeFunctor prange_factor(time, rho, sat, rec_pos, cov);
 
     Xformd x = Xformd::Identity();
     x.t() << 10, 0, 0;
@@ -150,8 +151,8 @@ TEST (Pseudorange, PointPositioning)
     xhat.t().x() -= 1000;
     Vector3d vhat = Vector3d::Zero();
     Vector2d clk_bias_hat{0.0, 0.0};
-    problem.AddParameterBlock(xhat.data(), 7, new XformAutoDiffParameterization);
-    problem.AddParameterBlock(x_e2n.data(), 7, new XformAutoDiffParameterization);
+    problem.AddParameterBlock(xhat.data(), 7, new XformParamAD);
+    problem.AddParameterBlock(x_e2n.data(), 7, new XformParamAD);
     problem.AddParameterBlock(vhat.data(), 3);
     problem.AddParameterBlock(clk_bias_hat.data(), 2);
     problem.SetParameterBlockConstant(x_e2n.data());
@@ -162,8 +163,8 @@ TEST (Pseudorange, PointPositioning)
         Vector3d meas;
         Matrix2d cov = Vector2d{0.1, 0.1}.asDiagonal();
         sat->computeMeasurement(rec_time, rec_pos, rec_vel_ECEF, meas);
-        problem.AddResidualBlock(new PRangeAD(
-                                     new PseudorangeCostFunction(rec_time, meas.topRows<2>(), *sat, rec_pos, cov)),
+        problem.AddResidualBlock(new PRangeFactorAD(
+                                     new PRangeFunctor(rec_time, meas.topRows<2>(), *sat, rec_pos, cov)),
                                  NULL, xhat.data(), vhat.data(), clk_bias_hat.data(), x_e2n.data());
     }
 
@@ -197,4 +198,117 @@ TEST (Pseudorange, PointPositioning)
     EXPECT_NEAR(verror, 0.0, 1e-2); ///TODO: Figure out why this is so large
     EXPECT_NEAR(dterror, 0.0, 1e-8);
 }
+
+TEST(Pseudorange, Trajectory)
+{
+    ReferenceController cont;
+    cont.load("../params/sim_params.yaml");
+    Simulator sim(cont, cont, false, 2);
+    sim.load("../params/sim_params.yaml");
+
+    const int N = 100;
+    int n = 0;
+
+    Eigen::Matrix<double, 7, N> xhat, x;
+    Eigen::Matrix<double, 3, N> vhat, v;
+    std::vector<double> t;
+    Xformd x_e2n_hat = sim.x_e2n_;
+    Vector2d clk_bias_hat, clk_bias;
+
+    std::default_random_engine rng;
+    std::normal_distribution<double> normal;
+
+    std::vector<Vector2d, aligned_allocator<Vector2d>> measurements;
+    std::vector<Matrix2d, aligned_allocator<Matrix2d>> cov;
+    std::vector<GTime> gtimes;
+    measurements.resize(sim.satellites_.size());
+    gtimes.resize(sim.satellites_.size());
+    cov.resize(sim.satellites_.size());
+
+    ceres::Problem problem;
+
+    for (int i = 0; i < N; i++)
+    {
+        xhat.col(i) = Xformd::Identity().elements();
+        problem.AddParameterBlock(xhat.data() + i*7, 7, new XformParamAD());
+        vhat.setZero();
+        problem.AddParameterBlock(vhat.data() + i*3, 3);
+    }
+    clk_bias_hat.setZero();
+    problem.AddParameterBlock(clk_bias_hat.data(), 2);
+    problem.AddParameterBlock(x_e2n_hat.data(), 7, new XformParamAD());
+    problem.SetParameterBlockConstant(x_e2n_hat.data());
+
+    bool new_node = false;
+    auto raw_gnss_cb = [&measurements, &new_node, &cov, &gtimes]
+            (const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat)
+    {
+        measurements[sat.idx_] = z.topRows<2>();
+        cov[sat.idx_] = R.topLeftCorner<2,2>();
+        gtimes[sat.idx_]=t;
+        new_node = true;
+    };
+
+    EstimatorWrapper est;
+    est.register_raw_gnss_cb(raw_gnss_cb);
+    sim.register_estimator(&est);
+
+    while (n < N)
+    {
+        sim.run();
+
+        if (new_node)
+        {
+            new_node = false;
+            for (int i = 0; i < measurements.size(); i++)
+            {
+                problem.AddResidualBlock(new PRangeFactorAD(new PRangeFunctor(gtimes[i],
+                                                                                  measurements[i],
+                                                                                  sim.satellites_[i],
+                                                                                  sim.get_position_ecef(),
+                                                                                  cov[i])),
+                                                      NULL,
+                                                      xhat.data() + n*7,
+                                                      vhat.data() + n*3,
+                                                      clk_bias_hat.data(),
+                                                      x_e2n_hat.data());
+            }
+            x.col(n) = sim.dyn_.get_state().X.elements();
+            v.col(n) = sim.dyn_.get_state().q.rota(sim.dyn_.get_state().v);
+            t.push_back(sim.t_);
+            n++;
+
+        }
+    }
+
+
+    ceres::Solver::Options options;
+    options.max_num_iterations = 100;
+    options.num_threads = 6;
+    options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
+    options.minimizer_progress_to_stdout = false;
+    ceres::Solver::Summary summary;
+
+    MatrixXd xhat0 = xhat;
+    MatrixXd vhat0 = vhat;
+    Xformd x_e2n_hat0 = x_e2n_hat;
+    Vector2d clk_bias_hat0 = clk_bias_hat;
+
+    ceres::Solve(options, &problem, &summary);
+
+    Logger<double> log("/tmp/ceres_sandbox/Pseudorange.Trajectory.log");
+
+    for (int i = 0; i < N; i++)
+    {
+        log.log(t[i]);
+        log.logVectors(xhat0.col(i),
+                       vhat0.col(i),
+                       xhat.col(i),
+                       vhat.col(i),
+                       x.col(i),
+                       v.col(i));
+    }
+
+}
+
 

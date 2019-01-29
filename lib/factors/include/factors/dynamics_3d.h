@@ -22,13 +22,13 @@ struct Dynamics3DPlus {
     return true;
   }
 };
-typedef ceres::AutoDiffLocalParameterization<Dynamics3DPlus, 10, 9> Dynamics3DPlusParameterization;
+typedef ceres::AutoDiffLocalParameterization<Dynamics3DPlus, 10, 9> Dynamics3DPlusParamAD;
 
 
-class DynamicsConstraint3D
+class Dyn3dFunctor
 {
 public:
-  DynamicsConstraint3D(double dt, double& cost):
+  Dyn3dFunctor(double dt, double& cost):
     cost_{cost}
   {
     dt_ = dt;
@@ -79,13 +79,13 @@ public:
   double dt_;
   double& cost_;
 };
-typedef ceres::AutoDiffCostFunction<DynamicsConstraint3D, 9, 10, 10, 4, 4> DynamicsContraint3DFactor;
+typedef ceres::AutoDiffCostFunction<Dyn3dFunctor, 9, 10, 10, 4, 4> Dyn3DFactorAD;
 
 
-class PositionVelocityConstraint3D
+class PosVel3DFunctor
 {
 public:
-  PositionVelocityConstraint3D(Ref<Vector3d> p, double vmag, double& cost) :
+  PosVel3DFunctor(Ref<Vector3d> p, double vmag, double& cost) :
     cost_(cost)
   {
     p_ = p;
@@ -112,13 +112,13 @@ public:
   double vmag_;
   double& cost_;
 };
-typedef ceres::AutoDiffCostFunction<PositionVelocityConstraint3D, 4, 10> PositionVelocityConstraint3DFactor;
+typedef ceres::AutoDiffCostFunction<PosVel3DFunctor, 4, 10> PosVel3DFactorAD;
 
 
-class InputCost3D
+class Input3DFunctor
 {
 public:
-  InputCost3D(Matrix4d& R):
+  Input3DFunctor(Matrix4d& R):
     R_(R.data())
   {}
 
@@ -135,4 +135,4 @@ public:
   }
   Map<Matrix4d> R_;
 };
-typedef ceres::AutoDiffCostFunction<InputCost3D, 4, 4> InputCost3DFactor;
+typedef ceres::AutoDiffCostFunction<Input3DFunctor, 4, 4> Input3DFactorAD;

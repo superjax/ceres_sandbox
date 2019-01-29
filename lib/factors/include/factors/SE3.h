@@ -7,11 +7,11 @@
 using namespace Eigen;
 using namespace xform;
 
-class XformFactorCostFunction
+class XformFunctor
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    XformFactorCostFunction(double *x)
+    XformFunctor(double *x)
     {
       xform_ = Xformd(x);
     }
@@ -27,15 +27,15 @@ public:
 private:
     xform::Xformd xform_;
 };
-typedef ceres::AutoDiffCostFunction<XformFactorCostFunction, 6, 7> XformFactorAutoDiff;
+typedef ceres::AutoDiffCostFunction<XformFunctor, 6, 7> XformFactorAD;
 
 
 
-class XformEdgeFactorCostFunction
+class XformEdgeFunctor
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    XformEdgeFactorCostFunction(Vector7d& _ebar_ij, Matrix6d& _P_ij)
+    XformEdgeFunctor(Vector7d& _ebar_ij, Matrix6d& _P_ij)
     {
       ebar_ij_ = _ebar_ij;
       Omega_ij_ = _P_ij.inverse();
@@ -55,15 +55,15 @@ private:
     xform::Xform<double> ebar_ij_; // Measurement of Edge
     Matrix6d Omega_ij_; // Covariance of measurement
 };
-typedef ceres::AutoDiffCostFunction<XformEdgeFactorCostFunction, 6, 7, 7> XformEdgeFactorAutoDiff;
+typedef ceres::AutoDiffCostFunction<XformEdgeFunctor, 6, 7, 7> XformEdgeFactorAD;
 
 
 
-class XformNodeFactorCostFunction
+class XformNodeFunctor
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    XformNodeFactorCostFunction(const Vector7d& _xbar, const Matrix6d& _P)
+    XformNodeFunctor(const Vector7d& _xbar, const Matrix6d& _P)
     {
       xbar_ = Xformd(_xbar);
       Omega_ = _P.inverse().llt().matrixL().transpose();
@@ -81,7 +81,7 @@ private:
     xform::Xformd xbar_; // Measurement of Node
     Matrix6d Omega_; // Covariance of measurement
 };
-typedef ceres::AutoDiffCostFunction<XformNodeFactorCostFunction, 6, 7> XformNodeFactorAutoDiff;
+typedef ceres::AutoDiffCostFunction<XformNodeFunctor, 6, 7> XformNodeFactorAD;
 
 
 
@@ -97,13 +97,13 @@ struct XformPlus {
     return true;
   }
 };
-typedef ceres::AutoDiffLocalParameterization<XformPlus, 7, 6> XformAutoDiffParameterization;
+typedef ceres::AutoDiffLocalParameterization<XformPlus, 7, 6> XformParamAD;
 
 
-struct XformTimeOffsetCostFunction
+struct XformTimeOffsetFunctor
 {
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  XformTimeOffsetCostFunction(const Vector7d& _x, const Vector6d& _xdot, const Matrix6d& _P)
+  XformTimeOffsetFunctor(const Vector7d& _x, const Vector6d& _xdot, const Matrix6d& _P)
   {
     Xi_ = _P.inverse().llt().matrixL().transpose();
 //    Xi_ = _P.inverse();
@@ -126,4 +126,4 @@ private:
   Vector6d xdot_;
   Matrix6d Xi_;
 };
-typedef ceres::AutoDiffCostFunction<XformTimeOffsetCostFunction, 6, 7, 1> XformTimeOffsetAutoDiff;
+typedef ceres::AutoDiffCostFunction<XformTimeOffsetFunctor, 6, 7, 1> XformTimeOffsetAD;

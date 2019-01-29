@@ -1,10 +1,10 @@
 #include <ceres/ceres.h>
 
 
-class DynamicsConstraint1D
+class Dyn1DFunctor
 {
 public:
-  DynamicsConstraint1D(double dt)
+  Dyn1DFunctor(double dt)
   {
     dt_ = dt;
   }
@@ -22,13 +22,13 @@ public:
   }
   double dt_;
 };
-typedef ceres::AutoDiffCostFunction<DynamicsConstraint1D, 2, 2, 2, 1, 1> DynamicsContraint1DFactor;
+typedef ceres::AutoDiffCostFunction<Dyn1DFunctor, 2, 2, 2, 1, 1> Dyn1dFactorAD;
 
 
-class PositionVelocityConstraint1D
+class PosVel1DFunctor
 {
 public:
-  PositionVelocityConstraint1D(double x, double v)
+  PosVel1DFunctor(double x, double v)
   {
     x_ = x;
     v_ = v;
@@ -47,13 +47,13 @@ public:
   double x_;
   double v_;
 };
-typedef ceres::AutoDiffCostFunction<PositionVelocityConstraint1D, 2, 2> PositionVelocityConstraint1DFactor;
+typedef ceres::AutoDiffCostFunction<PosVel1DFunctor, 2, 2> PosVel1DFactorAD;
 
 
-class InputCost1D
+class Input1DFunctor
 {
 public:
-  InputCost1D(){}
+  Input1DFunctor(){}
 
   template <typename T>
   bool operator() (const T* u, T* res) const
@@ -62,4 +62,4 @@ public:
     return true;
   }
 };
-typedef ceres::AutoDiffCostFunction<InputCost1D, 1, 1> InputCost1DFactor;
+typedef ceres::AutoDiffCostFunction<Input1DFunctor, 1, 1> Input1DFactorAD;

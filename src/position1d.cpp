@@ -25,7 +25,7 @@ TEST(Position1D, AveragePoints)
   for (int i = 0; i < numObs; i++)
   {
     double sample = x + (rand() % 1000 - 500)/1000.0;
-    problem.AddResidualBlock(new Position1dFactor(sample), NULL, &xhat);
+    problem.AddResidualBlock(new Pos1DFactor(sample), NULL, &xhat);
   }
 
   Solver::Options options;
@@ -51,7 +51,7 @@ TEST(Position1D, AveragePointsWithParameterBlock)
   for (int i = 0; i < numObs; i++)
   {
     double sample = x + (rand() % 1000 - 500)*1e-4;
-    problem.AddResidualBlock(new Position1dFactor(sample), NULL, &xhat);
+    problem.AddResidualBlock(new Pos1DFactor(sample), NULL, &xhat);
   }
 
   Solver::Options options;
@@ -93,13 +93,13 @@ TEST(Position1D, SLAM)
     {
       double That = (x(i) - x(i-1)) + normal(gen)*std::sqrt(evar);
       xhat(i) = xhat(i-1) + That;
-      problem.AddResidualBlock(new Transform1d(That, evar), NULL, xhat.data() + i-1, xhat.data() + i);
+      problem.AddResidualBlock(new Transform1DFactor(That, evar), NULL, xhat.data() + i-1, xhat.data() + i);
     }
 
     for (int j = 0; j < l.rows(); j++)
     {
       double zbar = (l[j] - x[i]) + normal(gen)*std::sqrt(rvar);
-      problem.AddResidualBlock(new Range1dFactor(zbar, rvar), NULL, lhat.data()+j, xhat.data() + i);
+      problem.AddResidualBlock(new Range1DFactor(zbar, rvar), NULL, lhat.data()+j, xhat.data() + i);
     }
 
   }

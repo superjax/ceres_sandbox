@@ -29,12 +29,12 @@ TEST(Pose3D, AveragePoseAutoDiff)
 
     Problem problem;
 
-    problem.AddParameterBlock(xhat.data(), 7, new XformAutoDiffParameterization());
+    problem.AddParameterBlock(xhat.data(), 7, new XformParamAD());
 
     for (int i = 0; i < numObs; i++)
     {
       Vector7d sample = (x + Vector6d::Random()*noise_level).elements();
-      problem.AddResidualBlock(new XformFactorAutoDiff(new XformFactorCostFunction(sample.data())), NULL, xhat.data());
+      problem.AddResidualBlock(new XformFactorAD(new XformFunctor(sample.data())), NULL, xhat.data());
     }
 
     Solver::Options options;
@@ -112,7 +112,7 @@ TEST(Pose3D, GraphSLAM)
       x.col(0) = Xform<double>::Identity().elements();
 
       // Start by pinning the initial pose to the origin
-      problem.AddParameterBlock(xhat.data(), 7, new XformAutoDiffParameterization()); // Tell ceres that this is a Lie Group
+      problem.AddParameterBlock(xhat.data(), 7, new XformParamAD()); // Tell ceres that this is a Lie Group
       problem.SetParameterBlockConstant(xhat.data());
     }
     else
@@ -138,8 +138,8 @@ TEST(Pose3D, GraphSLAM)
       xjhat = (xihat * Xform<double>(ehat_ij)).elements();
 
       // Add odometry edges to graph
-      problem.AddParameterBlock(xhat.data() + 7*j, 7, new XformAutoDiffParameterization()); // Tell ceres that this is a lie group
-      problem.AddResidualBlock(new XformEdgeFactorAutoDiff(new XformEdgeFactorCostFunction(ehat_ij, odomcov)), NULL, xhat.data()+7*i, xhat.data()+7*j);
+      problem.AddParameterBlock(xhat.data() + 7*j, 7, new XformParamAD()); // Tell ceres that this is a lie group
+      problem.AddResidualBlock(new XformEdgeFactorAD(new XformEdgeFunctor(ehat_ij, odomcov)), NULL, xhat.data()+7*i, xhat.data()+7*j);
     }
   }
 
@@ -163,7 +163,7 @@ TEST(Pose3D, GraphSLAM)
     Vector7d ehat_ij = eij.elements();
 
     // Add loop closure edge to graph
-    problem.AddResidualBlock(new XformEdgeFactorAutoDiff(new XformEdgeFactorCostFunction(ehat_ij, lccov)), NULL, xhat.data()+7*i, xhat.data()+7*j);
+    problem.AddResidualBlock(new XformEdgeFactorAD(new XformEdgeFunctor(ehat_ij, lccov)), NULL, xhat.data()+7*i, xhat.data()+7*j);
   }
 
 

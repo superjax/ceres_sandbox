@@ -1,9 +1,9 @@
 #include <ceres/ceres.h>
 
-class Transform1d : public ceres::SizedCostFunction<1,1,1>
+class Transform1DFactor : public ceres::SizedCostFunction<1,1,1>
 {
 public:
-    Transform1d(double z, double var) :
+    Transform1DFactor(double z, double var) :
         transform_(z),
         var_(var)
     {}

@@ -37,38 +37,38 @@ TEST (Control, Robot1d_OptimizeTrajectorySingleWindow)
   }
 
   // pin initial pose (constraint)
-  problem.AddResidualBlock(new PositionVelocityConstraint1DFactor(new PositionVelocityConstraint1D(x0[0], x0[1])), NULL, x.data());
+  problem.AddResidualBlock(new PosVel1DFactorAD(new PosVel1DFunctor(x0[0], x0[1])), NULL, x.data());
   x.col(0) << x0[0], v_init;
   u(0) = 0;
 
-  problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data());
+  problem.AddResidualBlock(new Input1DFactorAD(new Input1DFunctor()), NULL, u.data());
   for (int i = 1; i < N; i++)
   {
     // dynamics constraint
-    problem.AddResidualBlock(new DynamicsContraint1DFactor(new DynamicsConstraint1D(dt)), NULL,
+    problem.AddResidualBlock(new Dyn1dFactorAD(new Dyn1DFunctor(dt)), NULL,
                              x.data()+(i-1)*2, x.data()+i*2, u.data()+i-1, u.data()+i);
     // input cost
-    problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data()+i);
+    problem.AddResidualBlock(new Input1DFactorAD(new Input1DFunctor()), NULL, u.data()+i);
     x.col(i) << v_init*i*dt, v_init;
   }
 
   // pin final pose (constraint)
-  problem.AddResidualBlock(new PositionVelocityConstraint1DFactor(new PositionVelocityConstraint1D(xf[0], x0[1])), NULL, x.data()+2*(N-1));
+  problem.AddResidualBlock(new PosVel1DFactorAD(new PosVel1DFunctor(xf[0], x0[1])), NULL, x.data()+2*(N-1));
   x.col(N-1) << xf[0], v_init;
 
   ceres::Solver::Options options;
   options.max_num_iterations = 1000;
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-  options.minimizer_progress_to_stdout = true;
+  options.minimizer_progress_to_stdout = false;
   ceres::Solver::Summary summary;
-  std::ofstream traj0_file("1d_trajectory_states_init.bin");
+  std::ofstream traj0_file("/tmp/ceres_sandbox/1d_trajectory_states_init.bin");
   traj0_file.write((char*)x.data(), sizeof(double)*x.rows()*x.cols());
   traj0_file.close();
 
   ceres::Solve(options, &problem, &summary);
 
-  std::ofstream traj_file("1d_trajectory_states.bin");
-  std::ofstream input_file("1d_trajectory_input.bin");
+  std::ofstream traj_file("/tmp/ceres_sandbox/1d_trajectory_states.bin");
+  std::ofstream input_file("/tmp/ceres_sandbox/1d_trajectory_input.bin");
   traj_file.write((char*)x.data(), sizeof(double)*x.rows()*x.cols());
   input_file.write((char*)u.data(), sizeof(double)*u.rows()*u.cols());
   traj_file.close();
@@ -111,24 +111,24 @@ TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
 
 
     // pin initial pose (constraint)
-    problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data());
+    problem.AddResidualBlock(new Input1DFactorAD(new Input1DFunctor()), NULL, u.data());
     for (int i = 0; i < K; i++)
     {
       int id = i + K*w;
       if (i == 0)
       {
-        problem.AddResidualBlock(new PositionVelocityConstraint1DFactor(
-                                   new PositionVelocityConstraint1D(x0[0], x0[1])), NULL, x.data() + id*2);
+        problem.AddResidualBlock(new PosVel1DFactorAD(
+                                   new PosVel1DFunctor(x0[0], x0[1])), NULL, x.data() + id*2);
       }
 
       if (id > 0)
       {
         // dynamics constraint
-        problem.AddResidualBlock(new DynamicsContraint1DFactor(new DynamicsConstraint1D(dt)), NULL,
+        problem.AddResidualBlock(new Dyn1dFactorAD(new Dyn1DFunctor(dt)), NULL,
                                  x.data()+(id-1)*2, x.data()+id*2, u.data()+id-1, u.data()+id);
       }
       // input cost
-      problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data()+id);
+      problem.AddResidualBlock(new Input1DFactorAD(new Input1DFunctor()), NULL, u.data()+id);
       x.col(id) << x0[0] + v_init*i*dt, v_init;
       u(id) = 0;
     }
@@ -137,26 +137,26 @@ TEST (Control, Robot1d_OptimizeTrajectoryMultiWindow)
   // pin final pose (constraint)
   int id = K*W;
   Vector2d xf = x_desired.rightCols(1);
-  problem.AddResidualBlock(new DynamicsContraint1DFactor(new DynamicsConstraint1D(dt)), NULL,
+  problem.AddResidualBlock(new Dyn1dFactorAD(new Dyn1DFunctor(dt)), NULL,
                            x.data()+(id-1)*2, x.data()+id*2, u.data()+id-1, u.data()+id);
-  problem.AddResidualBlock(new InputCost1DFactor(new InputCost1D()), NULL, u.data()+id);
-  problem.AddResidualBlock(new PositionVelocityConstraint1DFactor(
-                             new PositionVelocityConstraint1D(xf[0], xf[1])), NULL, x.data() + id*2);
+  problem.AddResidualBlock(new Input1DFactorAD(new Input1DFunctor()), NULL, u.data()+id);
+  problem.AddResidualBlock(new PosVel1DFactorAD(
+                             new PosVel1DFunctor(xf[0], xf[1])), NULL, x.data() + id*2);
   x.col(id) << xf[0], 1.0;
 
   ceres::Solver::Options options;
   options.max_num_iterations = 1000;
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
-  options.minimizer_progress_to_stdout = true;
+  options.minimizer_progress_to_stdout = false;
   ceres::Solver::Summary summary;
-  std::ofstream traj0_file("1d_trajectory_multi_states_init.bin");
+  std::ofstream traj0_file("/tmp/ceres_sandbox/1d_trajectory_multi_states_init.bin");
   traj0_file.write((char*)x.data(), sizeof(double)*x.rows()*x.cols());
   traj0_file.close();
 
   ceres::Solve(options, &problem, &summary);
 
-  std::ofstream traj_file("1d_trajectory_multi_states.bin");
-  std::ofstream input_file("1d_trajectory_multi_input.bin");
+  std::ofstream traj_file("/tmp/ceres_sandbox/1d_trajectory_multi_states.bin");
+  std::ofstream input_file("/tmp/ceres_sandbox/1d_trajectory_multi_input.bin");
   traj_file.write((char*)x.data(), sizeof(double)*x.rows()*x.cols());
   input_file.write((char*)u.data(), sizeof(double)*u.rows()*u.cols());
   traj_file.close();
@@ -183,21 +183,21 @@ TEST (DISABLED_Control, MultirotorSingleStep)
 
   ceres::Problem problem;
 
-  problem.AddParameterBlock(x.data(), 10, new Dynamics3DPlusParameterization());
-  problem.AddParameterBlock(x.data()+10, 10, new Dynamics3DPlusParameterization());
+  problem.AddParameterBlock(x.data(), 10, new Dynamics3DPlusParamAD());
+  problem.AddParameterBlock(x.data()+10, 10, new Dynamics3DPlusParamAD());
   problem.AddParameterBlock(u.data(), 4);
 
   x.col(0) = x0;
   x.col(1) = xf;
 
-  problem.AddResidualBlock(new PositionVelocityConstraint3DFactor(
-      new PositionVelocityConstraint3D(x0.segment<3>(0), 0, dyn_cost)), NULL, x.data());
-  problem.AddResidualBlock(new PositionVelocityConstraint3DFactor(
-      new PositionVelocityConstraint3D(xf.segment<3>(0), 0, dyn_cost)), NULL, x.data()+10);
-  problem.AddResidualBlock(new DynamicsContraint3DFactor(new DynamicsConstraint3D(dt, dyn_cost)), NULL,
+  problem.AddResidualBlock(new PosVel3DFactorAD(
+      new PosVel3DFunctor(x0.segment<3>(0), 0, dyn_cost)), NULL, x.data());
+  problem.AddResidualBlock(new PosVel3DFactorAD(
+      new PosVel3DFunctor(xf.segment<3>(0), 0, dyn_cost)), NULL, x.data()+10);
+  problem.AddResidualBlock(new Dyn3DFactorAD(new Dyn3dFunctor(dt, dyn_cost)), NULL,
                            x.data(), x.data()+10, u.data(), u.data()+4);
-  problem.AddResidualBlock(new InputCost3DFactor(new InputCost3D(R)), NULL, u.data());
-  problem.AddResidualBlock(new InputCost3DFactor(new InputCost3D(R)), NULL, u.data()+4);
+  problem.AddResidualBlock(new Input3DFactorAD(new Input3DFunctor(R)), NULL, u.data());
+  problem.AddResidualBlock(new Input3DFactorAD(new Input3DFunctor(R)), NULL, u.data()+4);
 
   ceres::Solver::Options options;
   options.max_num_iterations = 1000;
@@ -207,7 +207,7 @@ TEST (DISABLED_Control, MultirotorSingleStep)
   ceres::Solve(options, &problem, &summary);
 }
 
-TEST (Control, Multirotor3d_OptimizeTrajectorySingleWindow)
+TEST (DISABLED_Control, Multirotor3d_OptimizeTrajectorySingleWindow)
 {
   typedef Matrix<double, 10, 1> Vec10;
   Vec10 x0 = (Vec10() << 0,   0, 0, 1, 0, 0, 0, 0, 0, 0).finished();
@@ -238,7 +238,7 @@ TEST (Control, Multirotor3d_OptimizeTrajectorySingleWindow)
   for (int i = 0; i < N; i++)
   {
     // add parameter blocks
-    problem.AddParameterBlock(x.data() + 10*i, 10, new Dynamics3DPlusParameterization());
+    problem.AddParameterBlock(x.data() + 10*i, 10, new Dynamics3DPlusParamAD());
     problem.AddParameterBlock(u.data() + 4*i, 4);
     problem.SetParameterUpperBound(u.data() + 4*i, 3, 1.0);
     problem.SetParameterLowerBound(u.data() + 4*i, 3, 0.0);
@@ -247,18 +247,18 @@ TEST (Control, Multirotor3d_OptimizeTrajectorySingleWindow)
 //  problem.SetParameterBlockConstant(x.data() + (N-1)*10);
 
   // pin initial pose (constraint)
-  problem.AddResidualBlock(new PositionVelocityConstraint3DFactor(
-                             new PositionVelocityConstraint3D(x0.segment<3>(0), 0, pos_cost)), NULL, x.data());
+  problem.AddResidualBlock(new PosVel3DFactorAD(
+                             new PosVel3DFunctor(x0.segment<3>(0), 0, pos_cost)), NULL, x.data());
   x.col(0) = x0;
 
-  problem.AddResidualBlock(new InputCost3DFactor(new InputCost3D(R)), NULL, u.data());
+  problem.AddResidualBlock(new Input3DFactorAD(new Input3DFunctor(R)), NULL, u.data());
   for (int i = 1; i < N; i++)
   {
     // dynamics constraint
-    problem.AddResidualBlock(new DynamicsContraint3DFactor(new DynamicsConstraint3D(dt, dyn_cost)), NULL,
+    problem.AddResidualBlock(new Dyn3DFactorAD(new Dyn3dFunctor(dt, dyn_cost)), NULL,
                              x.data()+(i-1)*10, x.data()+i*10, u.data()+(i-1)*4, u.data()+i*4);
     // input cost
-    problem.AddResidualBlock(new InputCost3DFactor(new InputCost3D(R)), NULL, u.data()+4*i);
+    problem.AddResidualBlock(new Input3DFactorAD(new Input3DFunctor(R)), NULL, u.data()+4*i);
     x.col(i) = x0;
     x.block<3,1>(0,i) = (xf.segment<3>(0) - x0.segment<3>(0))/tmax * (double)i*dt + x0.segment<3>(0);
 //    x(3,i) = 0;
@@ -266,8 +266,8 @@ TEST (Control, Multirotor3d_OptimizeTrajectorySingleWindow)
 
   // pin final pose (constraint)
   Vector3d pf = xf.segment<3>(0);
-  problem.AddResidualBlock(new PositionVelocityConstraint3DFactor(
-        new PositionVelocityConstraint3D(pf, 0.0, pos_cost)), NULL, x.data()+10*(N-1));
+  problem.AddResidualBlock(new PosVel3DFactorAD(
+        new PosVel3DFunctor(pf, 0.0, pos_cost)), NULL, x.data()+10*(N-1));
   x.col(N-1) << xf;
 
   ceres::Solver::Options options;
@@ -275,7 +275,7 @@ TEST (Control, Multirotor3d_OptimizeTrajectorySingleWindow)
   options.linear_solver_type = ceres::SPARSE_NORMAL_CHOLESKY;
   options.minimizer_progress_to_stdout = true;
   ceres::Solver::Summary summary;
-  std::ofstream traj0_file("3d_trajectory_states_init.bin");
+  std::ofstream traj0_file("/tmp/ceres_sandbox/3d_trajectory_states_init.bin");
   traj0_file.write((char*)x.data(), sizeof(double)*x.rows()*x.cols());
   traj0_file.close();
 //  cout << "x0 = \n" << x << endl;
@@ -289,8 +289,8 @@ TEST (Control, Multirotor3d_OptimizeTrajectorySingleWindow)
   cout << summary.FullReport() << endl;
 
 //  cout << "xf = \n" << x << endl;
-  std::ofstream traj_file("3d_trajectory_states.bin");
-  std::ofstream input_file("3d_trajectory_input.bin");
+  std::ofstream traj_file("/tmp/ceres_sandbox/3d_trajectory_states.bin");
+  std::ofstream input_file("/tmp/ceres_sandbox/3d_trajectory_input.bin");
   traj_file.write((char*)x.data(), sizeof(double)*x.rows()*x.cols());
   input_file.write((char*)u.data(), sizeof(double)*u.rows()*u.cols());
   traj_file.close();

@@ -68,7 +68,7 @@ TEST(TimeOffset, 1DRobotSLAM)
 
     for (int win = 1; win < num_windows; win++)
     {
-        Imu1DFactorCostFunction *IMUFactor = new Imu1DFactorCostFunction(Robot.t_, bahat, Q);
+        Imu1DFunctor *IMUFactor = new Imu1DFunctor(Robot.t_, bahat, Q);
         while (Robot.t_ < win*window_size*dt)
         {
             Robot.step(dt);
@@ -85,19 +85,19 @@ TEST(TimeOffset, 1DRobotSLAM)
 
         // Add preintegrated IMU
         problem.AddParameterBlock(xhat.data()+2*win, 2);
-        problem.AddResidualBlock(new Imu1DFactorAutoDiff(IMUFactor), NULL, xhat.data()+2*(win-1), xhat.data()+2*win, &bahat);
+        problem.AddResidualBlock(new Imu1DFactorAD(IMUFactor), NULL, xhat.data()+2*(win-1), xhat.data()+2*win, &bahat);
 
         // Add landmark measurements
         for (int l = 0; l < landmarks.size(); l++)
         {
             double rbar = (landmarks[l] - Robot.x_) + normal(gen)*std::sqrt(rvar);
-            problem.AddResidualBlock(new Range1dFactorVelocity(rbar, rvar), NULL, lhat.data()+l, xhat.data()+2*win);
+            problem.AddResidualBlock(new RangeVel1DFactor(rbar, rvar), NULL, lhat.data()+l, xhat.data()+2*win);
         }
 
         // Add lagged position measurement
         double xbar_lag = Robot.hist_.front().x;
         double xbar_lag_cov = 1e-8;
-        problem.AddResidualBlock(new Position1dFactorWithTimeOffset(xbar_lag, xbar_lag_cov), NULL, xhat.data()+2*win, &Tdhat);
+        problem.AddResidualBlock(new Pos1DTimeOffsetFactor(xbar_lag, xbar_lag_cov), NULL, xhat.data()+2*win, &Tdhat);
     }
 
     Solver::Options options;
@@ -165,7 +165,7 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
     problem.AddParameterBlock(bhat.data(), 6);
     for (int n = 0; n < N; n++)
     {
-        problem.AddParameterBlock(xhat.data()+7*n, 7, new XformAutoDiffParameterization());
+        problem.AddParameterBlock(xhat.data()+7*n, 7, new XformParamAD());
         problem.AddParameterBlock(vhat.data()+3*n, 3);
     }
 
@@ -174,13 +174,13 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
     x.col(0) = multirotor.get_pose().arr_;
     v.col(0) = multirotor.dyn_.get_state().v;
 
-    std::vector<Imu3DFactorCostFunction*> factors;
+    std::vector<Imu3DFunctor*> factors;
     Matrix6d cov =  multirotor.get_imu_noise_covariance();
-    factors.push_back(new Imu3DFactorCostFunction(0, bhat));
+    factors.push_back(new Imu3DFunctor(0, bhat));
 
     // Integrate for N frames
     int node = 0;
-    Imu3DFactorCostFunction* factor = factors[node];
+    Imu3DFunctor* factor = factors[node];
     std::vector<double> t;
     t.push_back(multirotor.t_);
     Xformd prev2_pose, prev_pose, current_pose;
@@ -236,11 +236,11 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
 
 
             // Add IMU factor to graph
-            problem.AddResidualBlock(new Imu3DFactorAutoDiff(factor),
+            problem.AddResidualBlock(new Imu3DFactorAD(factor),
                                      NULL, xhat.data()+7*(node-1), xhat.data()+7*node, vhat.data()+3*(node-1), vhat.data()+3*node, bhat.data());
 
             // Start a new Factor
-            factors.push_back(new Imu3DFactorCostFunction(multirotor.t_, bhat));
+            factors.push_back(new Imu3DFunctor(multirotor.t_, bhat));
             factor = factors[node];
 
             Matrix6d P = Matrix6d::Identity() * 0.001;
@@ -249,8 +249,8 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
             Vector6d current_pose_dot;
             current_pose_dot.segment<3>(0) = v.col(node);
             current_pose_dot.segment<3>(3) = multirotor.dyn_.get_state().w;
-            problem.AddResidualBlock(new XformTimeOffsetAutoDiff(
-                                         new XformTimeOffsetCostFunction(current_pose.elements(), current_pose_dot, pose_cov)), NULL, xhat.data()+7*node, &dthat);
+            problem.AddResidualBlock(new XformTimeOffsetAD(
+                                         new XformTimeOffsetFunctor(current_pose.elements(), current_pose_dot, pose_cov)), NULL, xhat.data()+7*node, &dthat);
             //      }
 
             //      if (node > 2)

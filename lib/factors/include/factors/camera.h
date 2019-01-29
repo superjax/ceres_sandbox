@@ -1,17 +1,17 @@
 #include <Eigen/Core>
 #include <ceres/ceres.h>
 
-#include "utils/cam.h"
+#include "geometry/cam.h"
 #include "geometry/xform.h"
 
 using namespace Eigen;
 using namespace xform;
 
-class CameraFactorCostFunction
+class CamFunctor
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    CameraFactorCostFunction(const Vector2d& pix, const Matrix2d& cov, const Vector2d& img_size)
+    CamFunctor(const Vector2d& pix, const Matrix2d& cov, const Vector2d& img_size)
     {
         pix_ = pix;
         size_ = img_size;
@@ -43,4 +43,4 @@ private:
     Matrix2d Xi_;
 };
 
-typedef ceres::AutoDiffCostFunction<CameraFactorCostFunction, 2, 3, 7, 2, 2, 1, 5> CameraAutoDiff;
+typedef ceres::AutoDiffCostFunction<CamFunctor, 2, 3, 7, 2, 2, 1, 5> CamFactorAD;

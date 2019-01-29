@@ -29,7 +29,7 @@ using namespace xform;
 #   define NANO_IMU_ASSERT(...)
 #endif
 
-class Imu3DFactorCostFunction
+class Imu3DFunctor
 {
 public:
     enum
@@ -48,7 +48,7 @@ public:
     typedef Matrix<double, 9, 6> Mat96;
 
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    Imu3DFactorCostFunction()
+    Imu3DFunctor()
     {
         t0_ = INFINITY;
         delta_t_ = 0.0;
@@ -57,7 +57,7 @@ public:
         P_.setZero();
         J_.setZero();
     }
-    Imu3DFactorCostFunction(const double& _t0, const Vec6& b0)
+    Imu3DFunctor(const double& _t0, const Vec6& b0)
     {
         reset(_t0, b0);
     }
@@ -264,4 +264,4 @@ public:
 };
 
 
-typedef ceres::AutoDiffCostFunction<Imu3DFactorCostFunction, 9, 7, 7, 3, 3, 6> Imu3DFactorAutoDiff;
+typedef ceres::AutoDiffCostFunction<Imu3DFunctor, 9, 7, 7, 3, 3, 6> Imu3DFactorAD;

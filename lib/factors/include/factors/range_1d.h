@@ -1,9 +1,9 @@
 #include <ceres/ceres.h>
 
-class Range1dFactor : public ceres::SizedCostFunction<1,1,1>
+class Range1DFactor : public ceres::SizedCostFunction<1,1,1>
 {
 public:
-    Range1dFactor(double z, double var) :
+    Range1DFactor(double z, double var) :
         range_(z),
         var_(var)
     {}
@@ -34,10 +34,10 @@ private:
 
 };
 
-class Range1dFactorVelocity : public ceres::SizedCostFunction<1,1,2>
+class RangeVel1DFactor : public ceres::SizedCostFunction<1,1,2>
 {
 public:
-    Range1dFactorVelocity(double z, double var) :
+    RangeVel1DFactor(double z, double var) :
         range_(z),
         var_(var)
     {}

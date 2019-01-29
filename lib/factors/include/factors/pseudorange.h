@@ -9,11 +9,11 @@
 
 using namespace Eigen;
 
-class PseudorangeCostFunction
+class PRangeFunctor
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    PseudorangeCostFunction(const GTime& _t, const Vector2d& _rho, Satellite& sat, const Vector3d& _rec_pos_ecef, const Matrix2d& cov)
+    PRangeFunctor(const GTime& _t, const Vector2d& _rho, Satellite& sat, const Vector3d& _rec_pos_ecef, const Matrix2d& cov)
     {
         // We don't have ephemeris for this satellite, we can't do anything with it yet
         if (sat.eph_.A == 0)
@@ -80,4 +80,4 @@ public:
     Matrix2d Xi_;
 };
 
-typedef ceres::AutoDiffCostFunction<PseudorangeCostFunction, 2, 7, 3, 2, 7> PRangeAD;
+typedef ceres::AutoDiffCostFunction<PRangeFunctor, 2, 7, 3, 2, 7> PRangeFactorAD;

@@ -4,11 +4,11 @@
 #include <Eigen/Dense>
 
 
-class Position3dFactor : public ceres::SizedCostFunction<3,3>
+class Pos3DFactor : public ceres::SizedCostFunction<3,3>
 {
  public:
   EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-  Position3dFactor(double *x)
+  Pos3DFactor(double *x)
   {
       position_[0] = x[0];
       position_[1] = x[1];
