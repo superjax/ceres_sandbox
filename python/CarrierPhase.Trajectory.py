@@ -28,7 +28,7 @@ tautitles = [r'$\tau$', r'$\dot{\tau}$']
 
 
 
-f = plt.figure()
+f = plt.figure(dpi=150)
 for i in range(3):
     plt.subplot(3, 1, i+1)
     plt.title(xtitles[i])
@@ -38,7 +38,7 @@ for i in range(3):
     plt.legend()
 pw.addPlot("Position", f)
 
-f = plt.figure()
+f = plt.figure(dpi=150)
 for i in range(4):
     plt.subplot(4, 1, i+1)
     plt.title(xtitles[i+3])
@@ -48,7 +48,7 @@ for i in range(4):
     plt.legend()
 pw.addPlot("Attitude", f)
 
-f = plt.figure()
+f = plt.figure(dpi=150)
 for i in range(3):
     plt.subplot(3, 1, i+1)
     plt.title(vtitles[i])
@@ -58,7 +58,7 @@ for i in range(3):
     plt.legend()
 pw.addPlot("Velocity", f)
 
-f = plt.figure()
+f = plt.figure(dpi=150)
 for i in range(2):
     plt.subplot(2, 1, i+1)
     plt.title(tautitles[i])

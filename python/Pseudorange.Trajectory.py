@@ -24,7 +24,7 @@ vtitles = ['vx', 'vy', 'vz']
 
 
 
-f = plt.figure(1)
+f = plt.figure(dpi=150)
 for i in range(3):
     plt.subplot(3, 1, i+1)
     plt.title(xtitles[i])
@@ -34,7 +34,7 @@ for i in range(3):
     plt.legend()
 pw.addPlot("Position", f)
 
-f = plt.figure(2)
+f = plt.figure(dpi=150)
 for i in range(4):
     plt.subplot(4, 1, i+1)
     plt.title(xtitles[i+3])
@@ -44,7 +44,7 @@ for i in range(4):
     plt.legend()
 pw.addPlot("Attitude", f)
 
-f = plt.figure(3)
+f = plt.figure(dpi=150)
 for i in range(3):
     plt.subplot(3, 1, i+1)
     plt.title(vtitles[i])
