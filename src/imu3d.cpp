@@ -24,6 +24,7 @@ using namespace std;
 using namespace xform;
 using namespace multirotor_sim;
 
+
 TEST(Imu3D, compile)
 {
     Imu3DFunctor imu;
@@ -39,11 +40,8 @@ TEST(Imu3D, reset)
 
 TEST(Imu3D, Propagation)
 {
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
-    Simulator multirotor(cont, cont, false, 1);
-    multirotor.load("../params/sim_params.yaml");
-
+    Simulator multirotor;
+    multirotor.load(imu_only_sim());
 
     typedef Imu3DFunctor IMU;
     IMU imu;
@@ -53,37 +51,37 @@ TEST(Imu3D, Propagation)
 
     multirotor.run();
     imu.reset(multirotor.t_, b0);
-    Xformd x0 = multirotor.get_pose();
-    Vector3d v0 = multirotor.get_vel();
+    Xformd x0 = multirotor.state().X;
+    Vector3d v0 = multirotor.state().v;
 
     Logger<double> log("/tmp/ceres_sandbox/Imu3D.CheckPropagation.log");
 
-    Xformd xhat = multirotor.get_pose();
-    Vector3d vhat = multirotor.get_vel();
+    Xformd xhat = multirotor.state().X;
+    Vector3d vhat = multirotor.state().v;
     log.log(multirotor.t_);
-    log.logVectors(xhat.elements(), vhat, multirotor.get_pose().elements(),
-                   multirotor.get_vel(), multirotor.get_true_imu());
+    log.logVectors(xhat.elements(), vhat, multirotor.state().X.elements(),
+                   multirotor.state().v, multirotor.imu());
 
     double next_reset = 1.0;
     multirotor.tmax_ = 10.0;
     while (multirotor.run())
     {
-        imu.integrate(multirotor.t_, multirotor.get_true_imu(), cov);
+        imu.integrate(multirotor.t_, multirotor.imu(), cov);
 
         if (std::abs(multirotor.t_ - next_reset) <= multirotor.dt_ /2.0)
         {
             imu.reset(multirotor.t_, b0);
-            x0 = multirotor.get_pose();
-            v0 = multirotor.get_vel();
+            x0 = multirotor.state().X;
+            v0 = multirotor.state().v;
             next_reset += 1.0;
         }
 
         imu.estimateXj(x0.data(), v0.data(), xhat.data(), vhat.data());
         log.log(multirotor.t_);
-        log.logVectors(xhat.elements(), vhat, multirotor.get_pose().elements(), multirotor.get_vel(), multirotor.get_true_imu());
-        EXPECT_MAT_NEAR(xhat.t(), multirotor.get_pose().t(), 0.076);
-        EXPECT_QUAT_NEAR(xhat.q(), multirotor.get_pose().q(), 0.0033);
-        EXPECT_MAT_NEAR(vhat, multirotor.get_vel(), 0.02);
+        log.logVectors(xhat.elements(), vhat, multirotor.state().X.elements(), multirotor.state().v, multirotor.imu());
+        EXPECT_MAT_NEAR(xhat.t(), multirotor.state().p, 0.076);
+        EXPECT_QUAT_NEAR(xhat.q(), multirotor.state().q, 0.0033);
+        EXPECT_MAT_NEAR(vhat, multirotor.state().v, 0.022);
     }
 }
 
@@ -199,10 +197,20 @@ TEST(Imu3D, DynamicsJacobians)
 
 TEST(Imu3D, BiasJacobians)
 {
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
-    Simulator multirotor(cont, cont, false);
-    multirotor.load("../params/sim_params.yaml");
+    YAML::Node node;
+    node = YAML::LoadFile("../lib/multirotor_sim/params/sim_params.yaml");
+    ofstream tmp("/tmp/ceres_sandbox.tmp.yaml");
+    node["imu_enabled"] =  true;
+    node["alt_enabled"] =  false;
+    node["mocap_enabled"] =  false;
+    node["vo_enabled"] =  false;
+    node["camera_enabled"] =  false;
+    node["gnss_enabled"] =  false;
+    node["raw_gnss_enabled"] =  false;
+    tmp << node;
+    tmp.close();
+    Simulator multirotor(false, 1);
+    multirotor.load("/tmp/ceres_sandbox.tmp.yaml");
     std::vector<Vector6d,Eigen::aligned_allocator<Vector6d>> meas;
     std::vector<double> t;
     multirotor.dt_ = 0.001;
@@ -210,7 +218,7 @@ TEST(Imu3D, BiasJacobians)
     while (multirotor.t_ < 0.1)
     {
         multirotor.run();
-        meas.push_back(multirotor.get_true_imu());
+        meas.push_back(multirotor.imu());
         t.push_back(multirotor.t_);
     }
 
@@ -252,16 +260,14 @@ TEST(Imu3D, BiasJacobians)
 
 TEST(Imu3D, MultiWindow)
 {
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
-    Simulator multirotor(cont, cont, false, 2);
-    multirotor.load("../params/sim_params.yaml");
+    Simulator multirotor(false, 2);
+    multirotor.load(imu_only_sim());
 
     const int N = 10;
 
     Vector6d b, bhat;
-    b.block<3,1>(0,0) = multirotor.get_accel_bias();
-    b.block<3,1>(3,0) = multirotor.get_gyro_bias();
+    b.block<3,1>(0,0) = multirotor.accel_bias_;
+    b.block<3,1>(3,0) = multirotor.gyro_bias_;
     bhat.setZero();
 
     Problem problem;
@@ -273,9 +279,9 @@ TEST(Imu3D, MultiWindow)
     vhat.resize(3, N+1);
     v.resize(3, N+1);
 
-    xhat.col(0) = multirotor.get_pose().arr_;
+    xhat.col(0) = multirotor.state().X.arr_;
     vhat.col(0) = multirotor.dyn_.get_state().v;
-    x.col(0) = multirotor.get_pose().arr_;
+    x.col(0) = multirotor.state().X.arr_;
     v.col(0) = multirotor.dyn_.get_state().v;
 
     xhat.setZero();
@@ -311,7 +317,7 @@ TEST(Imu3D, MultiWindow)
     double node_dt = 1.0;
     double next_node = node_dt;
     Matrix6d P = Matrix6d::Identity() * 0.1;
-    problem.AddResidualBlock(new XformNodeFactorAD(new XformNodeFunctor(multirotor.get_pose().arr_, P)), NULL, xhat.data());
+    problem.AddResidualBlock(new XformNodeFactorAD(new XformNodeFunctor(multirotor.state().X.arr_, P)), NULL, xhat.data());
     while (node < N)
     {
         multirotor.run();
@@ -328,7 +334,7 @@ TEST(Imu3D, MultiWindow)
             factor->finished();
 
             // Save off True Pose and Velocity for Comparison
-            x.col(node) = multirotor.get_pose().arr_;
+            x.col(node) = multirotor.state().X.arr_;
             v.col(node) = multirotor.dyn_.get_state().v;
 
             // Add IMU factor to graph
@@ -340,7 +346,7 @@ TEST(Imu3D, MultiWindow)
             // Start a new Factor
             factors.push_back(new Imu3DFunctor(multirotor.t_, bhat));
             factor = factors[node];
-            problem.AddResidualBlock(new XformNodeFactorAD(new XformNodeFunctor(multirotor.get_pose().arr_, P)), NULL, xhat.data()+7*(node));
+            problem.AddResidualBlock(new XformNodeFactorAD(new XformNodeFunctor(multirotor.state().X.arr_, P)), NULL, xhat.data()+7*(node));
         }
     }
 

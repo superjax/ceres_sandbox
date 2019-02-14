@@ -19,6 +19,7 @@
 
 #include "multirotor_sim/simulator.h"
 #include "multirotor_sim/controller.h"
+#include "test_common.h"
 
 
 using namespace ceres;
@@ -128,26 +129,22 @@ TEST(TimeOffset, 1DRobotSLAM)
 
 TEST(TimeOffset, 3DmultirotorPoseGraph)
 {
-    google::InitGoogleLogging("Imu3D.MultiWindow");
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
+    Simulator multirotor(false, 1);
+    multirotor.load(mocap_yaml_file());
 
-    Simulator multirotor(cont, cont, false, 2);
-    multirotor.load("../params/sim_params.yaml");
-
-    const int N = 10;
+    const int N = 100;
 
     Vector6d b, bhat;
-    b.block<3,1>(0,0) = multirotor.get_accel_bias();
-    b.block<3,1>(3,0) = multirotor.get_gyro_bias();
+    b.block<3,1>(0,0) = multirotor.accel_bias_;
+    b.block<3,1>(3,0) = multirotor.gyro_bias_;
     bhat.setZero();
 
     double dt, dthat;
-    dt = 0.010;
+    dt = 0.01;
     dthat = 0.0;
 
     multirotor.mocap_transmission_time_ = dt;
-    multirotor.mocap_update_rate_ = 5;
+    multirotor.mocap_update_rate_ = 10;
 
 
     Eigen::MatrixXd xhat, x;
@@ -169,13 +166,13 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
         problem.AddParameterBlock(vhat.data()+3*n, 3);
     }
 
-    xhat.col(0) = multirotor.get_pose().arr_;
-    vhat.col(0) = multirotor.dyn_.get_state().v;
-    x.col(0) = multirotor.get_pose().arr_;
-    v.col(0) = multirotor.dyn_.get_state().v;
+    xhat.col(0) = multirotor.state().X.arr_;
+    vhat.col(0) = multirotor.state().v;
+    x.col(0) = multirotor.state().X.arr_;
+    v.col(0) = multirotor.state().v;
 
     std::vector<Imu3DFunctor*> factors;
-    Matrix6d cov =  multirotor.get_imu_noise_covariance();
+    Matrix6d cov =  multirotor.imu_R_;
     factors.push_back(new Imu3DFunctor(0, bhat));
 
     // Integrate for N frames
@@ -192,24 +189,16 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
     {
         factor->integrate(t, z, R);
     };
-    auto pos_cb = [&pose_cov, &new_node, &current_pose](const double& t, const Vector3d& z, const Matrix3d& R)
+    auto mocap_cb = [&pose_cov, &new_node, &current_pose](const double& t, const Xformd& z, const Matrix6d& R)
     {
         (void)t;
         new_node = true;
-        pose_cov.block<3,3>(0,0) = R;
-        current_pose.t_ = z;
-    };
-    auto att_cb = [&pose_cov, &new_node, &current_pose](const double& t, const Quatd& z, const Matrix3d& R)
-    {
-        (void)t;
-        new_node = true;
-        current_pose.q_ = z;
-        pose_cov.block<3,3>(3,3) = R;
+        pose_cov = R;
+        current_pose = z;
     };
     EstimatorWrapper est;
     est.register_imu_cb(imu_cb);
-    est.register_att_cb(att_cb);
-    est.register_pos_cb(pos_cb);
+    est.register_mocap_cb(mocap_cb);
     multirotor.register_estimator(&est);
 
     while (node < N)
@@ -229,11 +218,11 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
             // Calculate the Information Matrix of the IMU factor
             factor->finished();
 
+            xhat.col(node) = current_pose.arr_;
+
             // Save off True Pose and Velocity for Comparison
-            x.col(node) = multirotor.get_pose().arr_;
-            v.col(node) = multirotor.dyn_.get_state().v;
-
-
+            x.col(node) = multirotor.state().X.arr_;
+            v.col(node) = multirotor.state().v;
 
             // Add IMU factor to graph
             problem.AddResidualBlock(new Imu3DFactorAD(factor),
@@ -244,26 +233,11 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
             factor = factors[node];
 
             Matrix6d P = Matrix6d::Identity() * 0.001;
-            //      if (node > 1 && node < N-1)
-            //      {
             Vector6d current_pose_dot;
             current_pose_dot.segment<3>(0) = v.col(node);
-            current_pose_dot.segment<3>(3) = multirotor.dyn_.get_state().w;
+            current_pose_dot.segment<3>(3) = multirotor.state().w;
             problem.AddResidualBlock(new XformTimeOffsetAD(
-                                         new XformTimeOffsetFunctor(current_pose.elements(), current_pose_dot, pose_cov)), NULL, xhat.data()+7*node, &dthat);
-            //      }
-
-            //      if (node > 2)
-            //      {
-            //        Vector6d prev_pose_dot = (current_pose - prev2_pose) / (current_t - prev2_t);
-            //        problem.AddResidualBlock(new XformTimeOffsetAutoDiff(
-            //          new XformTimeOffsetCostFunction(prev_pose, prev_pose_dot, P)),
-            //            NULL, xhat.data()+7*(node-1), &dthat);
-            //      }
-            //      prev2_pose = prev_pose;
-            //      prev_pose = current_pose;
-            //      prev2_t = prev_t;
-            //      prev_t = current_t;
+                                         new XformTimeOffsetFunctor(x.col(node), current_pose_dot, pose_cov)), NULL, xhat.data()+7*node, &dthat);
         }
     }
 
@@ -279,25 +253,25 @@ TEST(TimeOffset, 3DmultirotorPoseGraph)
     MatrixXd vhat0 = vhat;
     //  cout.flush();
 
-    //    cout << "xhat0\n" << xhat.transpose() << endl;
-    //    cout << "bhat0\n" << bhat.transpose() << endl;
-    //    cout << "dthat0: " << dthat << endl;
+//        cout << "xhat0\n" << xhat.transpose() << endl;
+//        cout << "bhat0\n" << bhat.transpose() << endl;
+//        cout << "dthat0: " << dthat << endl;
 
     ceres::Solve(options, &problem, &summary);
     double error = (b - bhat).norm();
 
     //  cout << summary.FullReport();
-    //  cout << "x\n" << x.transpose() << endl;
-    //  cout << "xhat0\n" << xhat.transpose() << endl;
-    //  cout << "b:     " << b.transpose() << endl;
-    //  cout << "bhat:  " << bhat.transpose() << endl;
-    //  cout << "err:   " << (b - bhat).transpose() << endl;
+//      cout << "x\n" << x.transpose() << endl;
+//      cout << "xhatf\n" << xhat.transpose() << endl;
+//      cout << "b:     " << b.transpose() << endl;
+//      cout << "bhat:  " << bhat.transpose() << endl;
+//      cout << "err:   " << (b - bhat).transpose() << endl;
 
-    //  cout << "dt:    " << dt << endl;
-    //  cout << "dthatf: " << dthat << endl;
+//      cout << "dt:    " << dt << endl;
+//      cout << "dthatf: " << dthat << endl;
     //  cout << "e " << error << endl;
     EXPECT_LE(error, 0.2);
-    EXPECT_LE(fabs(dt - dthat), 0.01);
+    EXPECT_NEAR(dt, -dthat, 0.01);
 
     //  Eigen::Matrix<double, 9, N> final_residuals;
 

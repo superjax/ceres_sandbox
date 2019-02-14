@@ -202,10 +202,8 @@ TEST (Pseudorange, PointPositioning)
 
 TEST(Pseudorange, Trajectory)
 {
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
-    Simulator sim(cont, cont, false, 2);
-    sim.load("../params/sim_params.yaml");
+    Simulator sim(false, 2);
+    sim.load(raw_gps_yaml_file());
 
     const int N = 100;
     int n = 0;
@@ -213,7 +211,7 @@ TEST(Pseudorange, Trajectory)
     Eigen::Matrix<double, 7, N> xhat, x;
     Eigen::Matrix<double, 3, N> vhat, v;
     std::vector<double> t;
-    Xformd x_e2n_hat = sim.x_e2n_;
+    Xformd x_e2n_hat = sim.X_e2n_;
     Vector2d clk_bias_hat, clk_bias;
 
     std::default_random_engine rng;
@@ -242,12 +240,16 @@ TEST(Pseudorange, Trajectory)
 
     bool new_node = false;
     auto raw_gnss_cb = [&measurements, &new_node, &cov, &gtimes]
-            (const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat)
+            (const GTime& t, const VecVec3& z, const VecMat3& R, std::vector<Satellite>& sats)
     {
-        measurements[sat.idx_] = z.topRows<2>();
-        cov[sat.idx_] = R.topLeftCorner<2,2>();
-        gtimes[sat.idx_]=t;
-        new_node = true;
+        int i = 0;
+        for (auto sat : sats)
+        {
+            measurements[sat.idx_] = z[i].topRows<2>();
+            cov[sat.idx_] = R[i].topLeftCorner<2,2>();
+            gtimes[sat.idx_]=t;
+            new_node = true;
+        }
     };
 
     EstimatorWrapper est;
@@ -264,10 +266,10 @@ TEST(Pseudorange, Trajectory)
             for (int i = 0; i < measurements.size(); i++)
             {
                 problem.AddResidualBlock(new PRangeFactorAD(new PRangeFunctor(gtimes[i],
-                                                                                  measurements[i],
-                                                                                  sim.satellites_[i],
-                                                                                  sim.get_position_ecef(),
-                                                                                  cov[i])),
+                                                                              measurements[i],
+                                                                              sim.satellites_[i],
+                                                                              sim.get_position_ecef(),
+                                                                              cov[i])),
                                                       NULL,
                                                       xhat.data() + n*7,
                                                       vhat.data() + n*3,
@@ -314,10 +316,8 @@ TEST(Pseudorange, Trajectory)
 
 TEST(Pseudorange, TrajectoryClockDynamics)
 {
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
-    Simulator sim(cont, cont, false, 2);
-    sim.load("../params/sim_params.yaml");
+    Simulator sim(false, 2);
+    sim.load(raw_gps_yaml_file());
 
     const int N = 100;
     int n = 0;
@@ -326,7 +326,7 @@ TEST(Pseudorange, TrajectoryClockDynamics)
     Eigen::Matrix<double, 3, N> vhat, v;
     Eigen::Matrix<double, 2, N> tauhat, tau;
     std::vector<double> t;
-    Xformd x_e2n_hat = sim.x_e2n_;
+    Xformd x_e2n_hat = sim.X_e2n_;
 
     std::default_random_engine rng;
     std::normal_distribution<double> normal;
@@ -356,12 +356,16 @@ TEST(Pseudorange, TrajectoryClockDynamics)
 
     bool new_node = false;
     auto raw_gnss_cb = [&measurements, &new_node, &cov, &gtimes]
-            (const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat)
+            (const GTime& t, const VecVec3& z, const VecMat3& R, std::vector<Satellite>& sats)
     {
-        measurements[sat.idx_] = z.topRows<2>();
-        cov[sat.idx_] = R.topLeftCorner<2,2>();
-        gtimes[sat.idx_]=t;
-        new_node = true;
+        int i = 0;
+        for (auto sat : sats)
+        {
+            measurements[sat.idx_] = z[i].topRows<2>();
+            cov[sat.idx_] = R[i].topLeftCorner<2,2>();
+            gtimes[sat.idx_]=t;
+            new_node = true;
+        }
     };
 
     EstimatorWrapper est;

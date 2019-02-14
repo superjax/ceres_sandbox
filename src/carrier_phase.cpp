@@ -21,39 +21,39 @@
 class TestCarrierPhase : public ::testing::Test
 {
 protected:
-  TestCarrierPhase() :
-    sat(1, 0)
-  {}
-  void SetUp() override
+    TestCarrierPhase() :
+        sat(1, 0)
+    {}
+    void SetUp() override
     {
-      time.week = 86400.00 / DateTime::SECONDS_IN_WEEK;
-      time.tow_sec = 86400.00 - (time.week * DateTime::SECONDS_IN_WEEK);
+        time.week = 86400.00 / DateTime::SECONDS_IN_WEEK;
+        time.tow_sec = 86400.00 - (time.week * DateTime::SECONDS_IN_WEEK);
 
-      eph.sat = 1;
-      eph.A = 5153.79589081 * 5153.79589081;
-      eph.toe.week = 93600.0 / DateTime::SECONDS_IN_WEEK;
-      eph.toe.tow_sec = 93600.0 - (eph.toe.week * DateTime::SECONDS_IN_WEEK);
-      eph.toes = 93600.0;
-      eph.deln =  0.465376527657e-08;
-      eph.M0 =  1.05827953357;
-      eph.e =  0.00223578442819;
-      eph.omg =  2.06374037770;
-      eph.cus =  0.177137553692e-05;
-      eph.cuc =  0.457651913166e-05;
-      eph.crs =  88.6875000000;
-      eph.crc =  344.96875;
-      eph.cis = -0.856816768646e-07;
-      eph.cic =  0.651925802231e-07;
-      eph.idot =  0.342514267094e-09;
-      eph.i0 =  0.961685061380;
-      eph.OMG0 =  1.64046615454;
-      eph.OMGd = -0.856928551657e-08;
-      sat.addEphemeris(eph);
+        eph.sat = 1;
+        eph.A = 5153.79589081 * 5153.79589081;
+        eph.toe.week = 93600.0 / DateTime::SECONDS_IN_WEEK;
+        eph.toe.tow_sec = 93600.0 - (eph.toe.week * DateTime::SECONDS_IN_WEEK);
+        eph.toes = 93600.0;
+        eph.deln =  0.465376527657e-08;
+        eph.M0 =  1.05827953357;
+        eph.e =  0.00223578442819;
+        eph.omg =  2.06374037770;
+        eph.cus =  0.177137553692e-05;
+        eph.cuc =  0.457651913166e-05;
+        eph.crs =  88.6875000000;
+        eph.crc =  344.96875;
+        eph.cis = -0.856816768646e-07;
+        eph.cic =  0.651925802231e-07;
+        eph.idot =  0.342514267094e-09;
+        eph.i0 =  0.961685061380;
+        eph.OMG0 =  1.64046615454;
+        eph.OMGd = -0.856928551657e-08;
+        sat.addEphemeris(eph);
 
-  }
-  eph_t eph;
-  GTime time;
-  Satellite sat;
+    }
+    eph_t eph;
+    GTime time;
+    Satellite sat;
 };
 
 TEST_F(TestCarrierPhase, CheckResidualAtInit)
@@ -115,10 +115,8 @@ TEST_F(TestCarrierPhase, CheckResidualAfterMovingAtInit)
 
 TEST(CarrierPhase, Trajectory)
 {
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
-    Simulator sim(cont, cont, false, 2);
-    sim.load("../params/sim_params.yaml");
+    Simulator sim(false, 2);
+    sim.load(raw_gps_yaml_file());
 
     const int N = 100;
     int n = 0;
@@ -127,7 +125,7 @@ TEST(CarrierPhase, Trajectory)
     Eigen::Matrix<double, 3, N> vhat, v;
     Eigen::Matrix<double, 2, N> tauhat, tau;
     std::vector<double> t;
-    Xformd x_e2n_hat = sim.x_e2n_;
+    Xformd x_e2n_hat = sim.X_e2n_;
 
     std::default_random_engine rng;
     std::normal_distribution<double> normal;
@@ -157,12 +155,16 @@ TEST(CarrierPhase, Trajectory)
 
     bool new_node = false;
     auto raw_gnss_cb = [&measurements, &new_node, &cov, &gtimes]
-            (const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat)
+            (const GTime& t, const VecVec3& z, const VecMat3& R, std::vector<Satellite>& sats)
     {
-        measurements[sat.idx_] = z;
-        cov[sat.idx_] = R;
-        gtimes[sat.idx_]=t;
-        new_node = true;
+        int i = 0;
+        for (auto sat : sats)
+        {
+            measurements[sat.idx_] = z[i];
+            cov[sat.idx_] = R[i];
+            gtimes[sat.idx_]=t;
+            new_node = true;
+        }
     };
 
     EstimatorWrapper est;
@@ -194,7 +196,7 @@ TEST(CarrierPhase, Trajectory)
                 if (n > 0)
                 {
                     problem.AddResidualBlock(new ClockBiasFactorAD(new ClockBiasFunctor(sim.t_ - t.back(), tau_cov)),
-                                         NULL, tauhat.data() + (n-1)*2, tauhat.data() + n*2);
+                                             NULL, tauhat.data() + (n-1)*2, tauhat.data() + n*2);
                     problem.AddResidualBlock(new CarrierPhaseFactorAD(
                                                  new CarrierPhaseFunctor(t0,
                                                                          gtimes[i],
@@ -202,12 +204,12 @@ TEST(CarrierPhase, Trajectory)
                                                                          sim.satellites_[i],
                                                                          sim.get_position_ecef(),
                                                                          cov[i](2,2))),
-                                             NULL,
-                                             xhat.data(),
-                                             xhat.data()+n*7,
-                                             tauhat.data(),
-                                             tauhat.data() + n*2,
-                                             x_e2n_hat.data());
+                                                                         NULL,
+                                                                         xhat.data(),
+                                                                         xhat.data()+n*7,
+                                                                         tauhat.data(),
+                                                                         tauhat.data() + n*2,
+                                                                         x_e2n_hat.data());
                 }
                 else
                 {

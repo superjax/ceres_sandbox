@@ -25,10 +25,8 @@ using namespace xform;
 
 TEST(Pseudorange, Trajectory)
 {
-    ReferenceController cont;
-    cont.load("../params/sim_params.yaml");
-    Simulator sim(cont, cont, false, 2);
-    sim.load("../params/sim_params.yaml");
+    Simulator sim(false, 2);
+    sim.load("../lib/multirotor_sim/params/sim_params.yaml");
 
     const int N = 100;
     int n = 0;
@@ -36,7 +34,7 @@ TEST(Pseudorange, Trajectory)
     Matrix<double, 7, N> xhat, x;
     Matrix<double, 3, N> vhat, v;
     std::vector<double> t;
-    Xformd x_e2n_hat = sim.x_e2n_;
+    Xformd x_e2n_hat = sim.X_e2n_;
     Vector2d clk_bias_hat, clk_bias;
 
     std::default_random_engine rng;
@@ -65,12 +63,17 @@ TEST(Pseudorange, Trajectory)
 
     bool new_node = false;
     auto raw_gnss_cb = [&measurements, &new_node, &cov, &gtimes]
-            (const GTime& t, const Vector3d& z, const Matrix3d& R, Satellite& sat)
+            (const GTime& t, const VecVec3& z, const VecMat3& R, std::vector<Satellite>& sats)
     {
-        measurements[sat.idx_] = z.topRows<2>();
-        cov[sat.idx_] = R.topLeftCorner<2,2>();
-        gtimes[sat.idx_]=t;
-        new_node = true;
+        int i = 0;
+        for (auto sat : sats)
+        {
+            measurements[sat.idx_] = z[i].topRows<2>();
+            cov[sat.idx_] = R[i].topLeftCorner<2,2>();
+            gtimes[sat.idx_] = t;
+            i++;
+            new_node = true;
+        }
     };
 
     EstimatorWrapper est;
