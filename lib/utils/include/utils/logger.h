@@ -2,6 +2,7 @@
 
 #include <fstream>
 #include <Eigen/Dense>
+#include "multirotor_sim/utils.h"
 
 
 template <typename Scalar>
@@ -10,6 +11,7 @@ class Logger
 public:
     Logger(std::string filename)
     {
+        createDirIfNotExist(std::experimental::filesystem::path(filename).parent_path());
         file_.open(filename);
     }
 
