@@ -81,7 +81,7 @@ TEST(Imu3D, Propagation)
         log.logVectors(xhat.elements(), vhat, multirotor.state().X.elements(), multirotor.state().v, multirotor.imu());
         EXPECT_MAT_NEAR(xhat.t(), multirotor.state().p, 0.076);
         EXPECT_QUAT_NEAR(xhat.q(), multirotor.state().q, 0.0033);
-        EXPECT_MAT_NEAR(vhat, multirotor.state().v, 0.022);
+        EXPECT_MAT_NEAR(vhat, multirotor.state().v, 0.04);
     }
 }
 
@@ -279,6 +279,9 @@ TEST(Imu3D, MultiWindow)
     vhat.resize(3, N+1);
     v.resize(3, N+1);
 
+    std::normal_distribution<double> normal;
+    std::default_random_engine rng;
+
     xhat.col(0) = multirotor.state().X.arr_;
     vhat.col(0) = multirotor.dyn_.get_state().v;
     x.col(0) = multirotor.state().X.arr_;
@@ -336,6 +339,8 @@ TEST(Imu3D, MultiWindow)
             // Save off True Pose and Velocity for Comparison
             x.col(node) = multirotor.state().X.arr_;
             v.col(node) = multirotor.state().v;
+
+            xhat.col(node) = (multirotor.state().X + randomNormal<double, 6, 1>(normal, rng)).arr();
 
             // Add IMU factor to graph
             problem.AddResidualBlock(new Imu3DFactorAD(factor), NULL,
