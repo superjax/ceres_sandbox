@@ -50,6 +50,7 @@ add_executable(ceres_tests
     src/camera.cpp
     src/pseudorange.cpp
     src/control.cpp
+    src/switch.cpp
     src/carrier_phase.cpp
 )
 
