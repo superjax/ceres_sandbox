@@ -335,7 +335,7 @@ TEST(Imu3D, MultiWindow)
 
             // Save off True Pose and Velocity for Comparison
             x.col(node) = multirotor.state().X.arr_;
-            v.col(node) = multirotor.dyn_.get_state().v;
+            v.col(node) = multirotor.state().v;
 
             // Add IMU factor to graph
             problem.AddResidualBlock(new Imu3DFactorAD(factor), NULL,

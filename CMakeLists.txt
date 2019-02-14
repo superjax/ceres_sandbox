@@ -48,10 +48,11 @@ add_executable(ceres_tests
     src/imu3d.cpp
     src/time_offset.cpp
     src/camera.cpp
-    src/prange.cpp
+    src/pseudorange.cpp
     src/control.cpp
     src/carrier_phase.cpp
 )
+
 target_link_libraries(ceres_tests
     utils
     geometry
