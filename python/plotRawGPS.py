@@ -32,6 +32,13 @@ def plotRawGPS(data, title="raw_gps"):
     pw = plotWindow(title=title)
 
     f = plt.figure(dpi=150)
+    plt.plot(-xhat0[:,1], xhat0[:,0], label=r"$\hat{x}_0$")
+    plt.plot(-xhatf[:,1], xhatf[:,0], '--', linewidth=3, label=r"$\hat{x}_f$")
+    plt.plot(-x[:,1], x[:,0], label="$x$")
+    plt.legend()
+    pw.addPlot("Position2D", f)
+
+    f = plt.figure(dpi=150)
     for i in range(3):
         plt.subplot(3, 1, i+1)
         plt.title(xtitles[i])
@@ -40,6 +47,7 @@ def plotRawGPS(data, title="raw_gps"):
         plt.plot(t, x[:,i], label="$x$")
         plt.legend()
     pw.addPlot("Position", f)
+
 
     f = plt.figure(dpi=150)
     for i in range(4):
@@ -72,7 +80,7 @@ def plotRawGPS(data, title="raw_gps"):
     pw.addPlot("Clock Bias", f)
 
     f = plt.figure()
-    plt.suptitle("SwitchFactor")
+    plt.suptitle("Switch Factor")
     for i in range(15):
         plt.subplot(15, 1, i+1)
         plt.plot(t, shat0[:,i], "-r", label=r"$\hat{x}_0$")
@@ -80,7 +88,7 @@ def plotRawGPS(data, title="raw_gps"):
         plt.plot(t, s[:,i], "-g", label=r"x")
         plt.ylim(-0.1, 1.1)
         if i == 0:
-            plt.legend()
+            plt.legend(ncol=3)
     pw.addPlot("Switch Factor", f)
 
 
