@@ -15,8 +15,8 @@
 #include "utils/robot1d.h"
 #include "utils/jac.h"
 #include "utils/logger.h"
-#include "utils/estimator_wrapper.h"
 
+#include "multirotor_sim/estimator_wrapper.h"
 #include "multirotor_sim/simulator.h"
 #include "multirotor_sim/controller.h"
 #include "test_common.h"

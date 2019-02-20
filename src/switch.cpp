@@ -10,11 +10,11 @@
 #include "multirotor_sim/simulator.h"
 #include "multirotor_sim/controller.h"
 #include "multirotor_sim/satellite.h"
-#include "utils/estimator_wrapper.h"
+#include "multirotor_sim/estimator_wrapper.h"
 #include "utils/logger.h"
 #include "test_common.h"
 
-#include "factors/switch.h"
+#include "factors/switch_pseudorange.h"
 #include "factors/pseudorange.h"
 
 
@@ -129,6 +129,11 @@ TEST (SwitchPRangeFunctor, SwitchBelowZero)
     (*a.f)(a.x.data(), a.v.data(), a.clk_bias.data(), a.x_e2n.data(), &s, res.data());
 
     EXPECT_MAT_NEAR(Vector3d(0, 0, 1.0), res, 1e-4);
+}
+
+TEST (SwitchPRangeFunctor, TrajectoryMultipath)
+{
+
 }
 
 

@@ -6,3 +6,4 @@ build/
 *.swp
 gh-md-toc
 logs/
+*.pyc

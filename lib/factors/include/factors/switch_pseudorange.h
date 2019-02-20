@@ -1,3 +1,4 @@
+#pragma once
 #include <ceres/ceres.h>
 
 #include "factors/pseudorange.h"
@@ -25,9 +26,9 @@ public:
         bool result = PRangeFunctor::operator ()(_x, _v, _clk, _x_e2n, _res);
         T s = *_s;
         if (s < 0.0)
-            s -= (double)*_s;
+            s = (T)0.0;
         else if (s > 1.0)
-            s -= (double)*_s - 1.0;
+            s = (T)1.0;
 
         _res[0] *= s;
         _res[1] *= s;
@@ -40,3 +41,22 @@ public:
 };
 
 typedef ceres::AutoDiffCostFunction<SwitchPRangeFunctor, 3, 7, 3, 2, 7, 1> SwitchPRangeFactorAD;
+
+
+class SwitchDynamicsFunctor
+{
+public:
+    SwitchDynamicsFunctor(const double& weight)
+    {
+        sw_ = weight;
+    }
+
+    template <typename T>
+    bool operator()(const T* _si, const T* _sj, T* _res) const
+    {
+        *_res = sw_ * (*_si - *_sj);
+    }
+
+    double sw_;
+};
+typedef ceres::AutoDiffCostFunction<SwitchDynamicsFunctor, 1, 1, 1> SwitchDynamicsFactorAD;
