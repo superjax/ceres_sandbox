@@ -55,6 +55,7 @@ public:
     bool operator()(const T* _si, const T* _sj, T* _res) const
     {
         *_res = sw_ * (*_si - *_sj);
+        return true;
     }
 
     double sw_;

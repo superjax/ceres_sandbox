@@ -286,10 +286,6 @@ TEST (MultipathPseudorange, SwitchingResidual)
     a.solve();
     a.log("/tmp/ceres_sandbox/MultipathPseudorange.SwitchingResidual.log");
 
-    cout << a.s << endl << endl << endl;
-    cout << a.shat0 << endl << endl << endl;
-    cout << a.shat << endl << endl << endl;
-
     ASSERT_LE(a.final_error(), a.error0);
 }
 

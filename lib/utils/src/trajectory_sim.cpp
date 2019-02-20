@@ -12,8 +12,8 @@ void TrajectorySim::init(const std::string& yaml_file)
 {
     sim.load(yaml_file);
 
-    get_yaml_node("switch_weight", yaml_file, switch_weight);
-    get_yaml_node("switch_dyn_weight", yaml_file, switch_dyn_weight);
+    switch_weight = 10.0;
+    switch_dyn_weight = 2.0;
 
     x_e2n_hat = sim.X_e2n_;
     b << sim.accel_bias_, sim.gyro_bias_;

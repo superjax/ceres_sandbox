@@ -1,10 +1,12 @@
 cmake_minimum_required(VERSION 2.8.3)
 project(ceres_sandbox)
 
+set (CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake")
 set(CMAKE_CXX_STANDARD 14)
 #SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfma")
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mavx2 -mfma")
 
+include(cotire)
 find_package(Ceres REQUIRED)
 find_package(Eigen3 REQUIRED)
 find_package(GTest REQUIRED)
@@ -24,6 +26,9 @@ add_library(utils
     lib/utils/src/trajectory_sim.cpp
     src/test_common.cpp)
 target_link_libraries(utils multirotor_sim)
+cotire(utils)
+
+set(TARGETS utils)
 
 function(make_gtest test_name source_file)
     add_executable(${test_name} ${source_file})
@@ -35,8 +40,9 @@ function(make_gtest test_name source_file)
         ${MULTIROTOR_SIM_LIBS}
         ${GTEST_LIBRARIES}
         ${CERES_LIBRARIES}
-    )
-endfunction(make_gtest)
+        )
+    cotire(${test_name})
+endfunction()
 
 make_gtest(test_position1d      src/position1d.cpp)
 make_gtest(test_position3d      src/position3d.cpp)
@@ -50,5 +56,4 @@ make_gtest(test_pseudorange     src/pseudorange.cpp)
 make_gtest(test_control         src/control.cpp)
 make_gtest(test_switch          src/switch.cpp)
 make_gtest(test_carrier_phase   src/carrier_phase.cpp)
-
 
